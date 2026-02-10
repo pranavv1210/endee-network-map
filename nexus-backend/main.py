@@ -3,7 +3,7 @@ Nexus Backend - FastAPI Application
 Vector-native knowledge intelligence system powered by Endee
 """
 
-from fastapi import FastAPI, UploadFile, File, HTTPException, BackgroundTasks, Body
+from fastapi import FastAPI, UploadFile, File, HTTPException, Body
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from typing import List, Optional, Dict, Any
@@ -87,7 +87,6 @@ async def health_check():
 
 @app.post("/api/documents/upload")
 async def upload_document(
-    background_tasks: BackgroundTasks,
     file: UploadFile = File(...)
 ):
     """
@@ -121,9 +120,8 @@ async def upload_document(
         # Extract chunks and create embeddings
         chunks = await document_processor.extract_chunks(document_id)
         
-        # Store in Endee (background task for performance)
-        background_tasks.add_task(
-            graph_builder.add_document_to_graph,
+        # Build graph inline so nodes are available immediately
+        await graph_builder.add_document_to_graph(
             document_id=document_id,
             chunks=chunks
         )
@@ -132,7 +130,7 @@ async def upload_document(
             "document_id": document_id,
             "filename": file.filename,
             "chunks_created": len(chunks),
-            "status": "processing"
+            "status": "completed"
         }
         
     except Exception as e:
