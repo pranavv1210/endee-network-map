@@ -11,7 +11,10 @@ import httpx
 import os
 from pathlib import Path
 import logging
+import json
+import time
 from datetime import datetime
+from functools import wraps
 
 from services.document_processor import DocumentProcessor
 from services.embedding_service import EmbeddingService
@@ -20,9 +23,27 @@ from services.graph_builder import GraphBuilder
 from services.query_engine import QueryEngine
 from services.device_graph_store import DeviceGraphStore
 
-# Configure logging
+# Configure structured logging with JSON format
+class JSONFormatter(logging.Formatter):
+    """JSON log formatter for structured logging"""
+    def format(self, record):
+        log_obj = {
+            'timestamp': datetime.utcnow().isoformat(),
+            'level': record.levelname,
+            'logger': record.name,
+            'message': record.getMessage(),
+            'module': record.module,
+            'function': record.funcName,
+        }
+        if record.exc_info:
+            log_obj['exception'] = self.formatException(record.exc_info)
+        return json.dumps(log_obj)
+
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+handler = logging.StreamHandler()
+handler.setFormatter(JSONFormatter())
+logger.handlers = [handler]
 
 # Initialize FastAPI app
 app = FastAPI(
@@ -102,14 +123,24 @@ async def upload_document(
         file: Document file to upload
         device_id: Unique device identifier (optional, will use default if not provided)
     """
+    start_time = time.time()
     try:
-        logger.info(f"Receiving document: {file.filename}")
+        logger.info(json.dumps({
+            'event': 'document_upload_started',
+            'filename': file.filename,
+            'file_size_bytes': file.size or 'unknown'
+        }))
         
         # Validate file type
         allowed_extensions = {'.pdf', '.txt', '.md', '.docx'}
         file_ext = Path(file.filename).suffix.lower()
         
         if file_ext not in allowed_extensions:
+            logger.warning(json.dumps({
+                'event': 'invalid_file_type',
+                'filename': file.filename,
+                'file_ext': file_ext
+            }))
             raise HTTPException(
                 status_code=400,
                 detail=f"Unsupported file type: {file_ext}. Allowed: {allowed_extensions}"
@@ -124,7 +155,11 @@ async def upload_document(
         if not device_id:
             device_id = "default"
         
-        logger.info(f"Processing document for device: {device_id}")
+        logger.info(json.dumps({
+            'event': 'document_processing_started',
+            'device_id': device_id,
+            'filename': file.filename
+        }))
         
         # Process document
         document_id = await document_processor.process_document(
@@ -135,6 +170,12 @@ async def upload_document(
         # Extract chunks and create embeddings
         chunks = await document_processor.extract_chunks(document_id)
         
+        logger.info(json.dumps({
+            'event': 'chunks_extracted',
+            'document_id': document_id,
+            'chunk_count': len(chunks)
+        }))
+        
         # Get device-specific graph builder
         graph_builder = device_graph_manager.get_graph_builder(device_id)
         
@@ -144,15 +185,32 @@ async def upload_document(
             chunks=chunks
         )
         
+        elapsed_time = time.time() - start_time
+        logger.info(json.dumps({
+            'event': 'document_upload_completed',
+            'document_id': document_id,
+            'filename': file.filename,
+            'chunks_created': len(chunks),
+            'elapsed_seconds': round(elapsed_time, 2),
+            'device_id': device_id
+        }))
+        
         return {
             "document_id": document_id,
             "filename": file.filename,
             "chunks_created": len(chunks),
-            "status": "completed"
+            "status": "completed",
+            "processing_time_seconds": round(elapsed_time, 2)
         }
         
     except Exception as e:
-        logger.error(f"Error processing document: {str(e)}")
+        elapsed_time = time.time() - start_time
+        logger.error(json.dumps({
+            'event': 'document_upload_failed',
+            'error': str(e),
+            'filename': file.filename,
+            'elapsed_seconds': round(elapsed_time, 2)
+        }))
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/api/graph")
@@ -170,8 +228,14 @@ async def get_knowledge_graph(
         similarity_threshold: Minimum similarity score for edges
         max_nodes: Maximum number of nodes to return
     """
+    start_time = time.time()
     try:
-        logger.info(f"Building knowledge graph for device: {device_id}")
+        logger.info(json.dumps({
+            'event': 'graph_build_started',
+            'device_id': device_id,
+            'similarity_threshold': similarity_threshold,
+            'max_nodes': max_nodes
+        }))
         
         # Get device-specific graph builder
         graph_builder = device_graph_manager.get_graph_builder(device_id)
@@ -181,14 +245,35 @@ async def get_knowledge_graph(
             max_nodes=max_nodes
         )
         
+        elapsed_time = time.time() - start_time
+        node_count = len(graph.get("nodes", []))
+        edge_count = len(graph.get("edges", []))
+        
+        logger.info(json.dumps({
+            'event': 'graph_build_completed',
+            'device_id': device_id,
+            'node_count': node_count,
+            'edge_count': edge_count,
+            'elapsed_seconds': round(elapsed_time, 2)
+        }))
+        
         return {
             "nodes": graph["nodes"],
             "edges": graph["edges"],
-            "stats": graph["stats"]
+            "stats": {
+                **graph.get("stats", {}),
+                "build_time_seconds": round(elapsed_time, 2)
+            }
         }
         
     except Exception as e:
-        logger.error(f"Error building graph: {str(e)}")
+        elapsed_time = time.time() - start_time
+        logger.error(json.dumps({
+            'event': 'graph_build_failed',
+            'device_id': device_id,
+            'error': str(e),
+            'elapsed_seconds': round(elapsed_time, 2)
+        }))
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/api/query")
@@ -197,15 +282,19 @@ async def semantic_query(body: Dict[str, Any] = Body(...)):
     Perform semantic query on the knowledge graph
     Returns relevant nodes and their relationships from user's private graph
     """
+    start_time = time.time()
     try:
-        start_time = datetime.utcnow()
-        
         device_id = body.get("device_id", "default")
         query_text = body.get("query", "")
         top_k = body.get("top_k", 10)
         similarity_threshold = body.get("similarity_threshold", 0.7)
         
-        logger.info(f"Processing query for device {device_id}: {query_text}")
+        logger.info(json.dumps({
+            'event': 'semantic_query_started',
+            'device_id': device_id,
+            'query_length': len(query_text),
+            'top_k': top_k
+        }))
         
         # Get device-specific graph builder
         graph_builder = device_graph_manager.get_graph_builder(device_id)
@@ -217,6 +306,16 @@ async def semantic_query(body: Dict[str, Any] = Body(...)):
         )
 
         # Fallback: if Endee returns no results, search in-memory graph nodes
+        result_count = len(result.get("nodes", []))
+        elapsed_time = time.time() - start_time
+        
+        logger.info(json.dumps({
+            'event': 'semantic_query_completed',
+            'device_id': device_id,
+            'result_count': result_count,
+            'elapsed_seconds': round(elapsed_time, 2)
+        }))
+        
         if query_text and not result.get("nodes"):
             query_terms = [term for term in query_text.lower().split() if term]
             fallback_nodes = []
