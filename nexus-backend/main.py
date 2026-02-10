@@ -128,12 +128,12 @@ async def upload_document(
             chunks=chunks
         )
         
-        return DocumentUploadResponse(
-            document_id=document_id,
-            filename=file.filename,
-            chunks_created=len(chunks),
-            status="processing"
-        )
+        return {
+            "document_id": document_id,
+            "filename": file.filename,
+            "chunks_created": len(chunks),
+            "status": "processing"
+        }
         
     except Exception as e:
         logger.error(f"Error processing document: {str(e)}")
