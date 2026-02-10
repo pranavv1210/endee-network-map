@@ -8,6 +8,10 @@ from typing import List, Dict, Any, Optional, Set, Tuple
 import asyncio
 from collections import defaultdict
 import numpy as np
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from services.embedding_service import EmbeddingService
 
 from services.endee_client import EndeeClient
 from services.embedding_service import EmbeddingService
@@ -25,7 +29,8 @@ class GraphNode:
         summary: str,
         embedding_id: str,
         document_id: str,
-        metadata: Dict[str, Any]
+        metadata: Dict[str, Any],
+        embedding: Optional[List[float]] = None
     ):
         self.node_id = node_id
         self.label = label
@@ -33,6 +38,7 @@ class GraphNode:
         self.embedding_id = embedding_id
         self.document_id = document_id
         self.metadata = metadata
+        self.embedding = embedding  # Store embedding for similarity computation
     
     def to_dict(self) -> Dict[str, Any]:
         return {
@@ -153,7 +159,8 @@ class GraphBuilder:
                         "chunk_index": chunk.chunk_index,
                         "filename": chunk.metadata.get("filename", ""),
                         "text_length": len(chunk.text)
-                    }
+                    },
+                    embedding=embedding  # Store for similarity computation
                 )
                 self.nodes[node.node_id] = node
             
@@ -187,36 +194,48 @@ class GraphBuilder:
         top_k: int = 5
     ):
         """
-        Discover semantic relationships between new chunks and existing knowledge
-        
-        This creates the "living network" effect
+        Discover semantic relationships between nodes
+        Uses in-memory embedding similarity computation
         """
         try:
-            # For each new chunk, find similar existing chunks
-            for chunk_id, embedding in zip(new_chunk_ids, new_embeddings):
-                results = await self.endee.search(
-                    index_name=self.index_name,
-                    query_vector=embedding,
-                    top_k=top_k + 1  # +1 because it includes self
-                )
+            # Get all existing node embeddings
+            existing_nodes = list(self.nodes.values())
+            
+            # For each new node, compute similarity to all existing nodes
+            for new_id, new_embedding in zip(new_chunk_ids, new_embeddings):
+                similarities = []
                 
-                for result in results:
-                    target_id = result.get("id")
-                    similarity = result.get("distance", 0)
+                for existing_node in existing_nodes:
+                    existing_id = existing_node.node_id
                     
-                    # Skip self-connections and low similarity
-                    if target_id == chunk_id or similarity < similarity_threshold:
+                    # Skip self-comparison
+                    if existing_id == new_id:
                         continue
                     
-                    # Create bidirectional edge
-                    edge = GraphEdge(
-                        source=chunk_id,
-                        target=target_id,
-                        similarity=float(similarity),
-                        relationship_type="semantic_similarity"
+                    # Skip if existing node has no embedding
+                    if existing_node.embedding is None:
+                        continue
+                    
+                    # Compute cosine similarity between new and existing
+                    similarity = self.embeddings.compute_similarity(
+                        new_embedding,
+                        existing_node.embedding
                     )
                     
-                    self.edges.append(edge)
+                    similarities.append((existing_id, similarity))
+                
+                # Sort by similarity and create edges for top matches
+                similarities.sort(key=lambda x: x[1], reverse=True)
+                
+                for existing_id, similarity in similarities[:top_k]:
+                    if similarity >= similarity_threshold:
+                        edge = GraphEdge(
+                            source=new_id,
+                            target=existing_id,
+                            similarity=float(similarity),
+                            relationship_type="semantic_similarity"
+                        )
+                        self.edges.append(edge)
             
             logger.info(f"Discovered {len(self.edges)} relationships")
             
@@ -230,10 +249,10 @@ class GraphBuilder:
         max_nodes: int = 100
     ) -> Dict[str, Any]:
         """
-        Build the complete knowledge graph
+        Build the complete knowledge graph with relationship metadata
         
         Returns:
-            Graph structure with nodes, edges, and statistics
+            Graph structure with nodes, edges, learning paths, and statistics
         """
         try:
             # Get all nodes (limit for performance)
@@ -245,18 +264,169 @@ class GraphBuilder:
                 if edge.similarity >= similarity_threshold
             ]
             
+            # Enrich nodes with relationship information
+            enriched_nodes = []
+            for node in nodes_list:
+                node_dict = node.to_dict()
+                
+                # Find related nodes (prerequisites and connections)
+                related = self._find_related_nodes(node.node_id, filtered_edges, nodes_list)
+                node_dict["related_concepts"] = related
+                
+                # Add learning prerequisites
+                node_dict["prerequisites"] = self._infer_prerequisites(node.label)
+                
+                enriched_nodes.append(node_dict)
+            
             # Calculate graph statistics
             stats = self._calculate_stats(nodes_list, filtered_edges)
             
+            # Generate learning paths
+            learning_paths = self._generate_learning_paths(enriched_nodes, filtered_edges)
+            
             return {
-                "nodes": [node.to_dict() for node in nodes_list],
+                "nodes": enriched_nodes,
                 "edges": [edge.to_dict() for edge in filtered_edges],
-                "stats": stats
+                "stats": stats,
+                "learning_paths": learning_paths
             }
             
         except Exception as e:
             logger.error(f"Error building graph: {e}")
             raise
+    
+    def _find_related_nodes(
+        self,
+        node_id: str,
+        edges: List[GraphEdge],
+        all_nodes: List[GraphNode]
+    ) -> List[Dict[str, Any]]:
+        """
+        Find and return related nodes for a given node
+        """
+        related = []
+        node_map = {n.node_id: n for n in all_nodes}
+        
+        for edge in edges:
+            if edge.source == node_id:
+                target = node_map.get(edge.target)
+                if target:
+                    related.append({
+                        "id": target.node_id,
+                        "label": target.label,
+                        "similarity": edge.similarity,
+                        "type": "connected_to"
+                    })
+            elif edge.target == node_id:
+                source = node_map.get(edge.source)
+                if source:
+                    related.append({
+                        "id": source.node_id,
+                        "label": source.label,
+                        "similarity": edge.similarity,
+                        "type": "connected_from"
+                    })
+        
+        return sorted(related, key=lambda x: x["similarity"], reverse=True)[:5]
+    
+    def _infer_prerequisites(
+        self,
+        concept: str
+    ) -> List[str]:
+        """
+        Infer learning prerequisites based on concept name
+        """
+        prerequisites_map = {
+            "neural network": ["linear algebra", "calculus", "machine learning basics"],
+            "deep learning": ["neural networks", "machine learning"],
+            "transformer": ["attention mechanism", "nlp basics"],
+            "reinforcement learning": ["machine learning", "probability"],
+            "computer vision": ["image processing", "linear algebra"],
+            "nlp": ["natural language processing basics", "machine learning"],
+            "embedding": ["vector spaces", "linear algebra"],
+        }
+        
+        concept_lower = concept.lower()
+        for key, prereqs in prerequisites_map.items():
+            if key in concept_lower:
+                return prereqs
+        
+        return []
+    
+    def _generate_learning_paths(
+        self,
+        nodes: List[Dict[str, Any]],
+        edges: List[GraphEdge]
+    ) -> List[Dict[str, Any]]:
+        """
+        Generate recommended learning paths based on concept dependencies
+        """
+        if not nodes:
+            return []
+        
+        # Find foundational concepts (few incoming connections)
+        incoming_count = defaultdict(int)
+        for edge in edges:
+            incoming_count[edge.target] += 1
+        
+        # Start with foundational concepts
+        foundations = [
+            n for n in nodes 
+            if incoming_count.get(n["id"], 0) <= 1 and "basic" in n["label"].lower()
+        ]
+        
+        if not foundations:
+            foundations = [nodes[0]]
+        
+        paths = []
+        for foundation in foundations[:3]:  # Limit to 3 paths
+            path = self._build_learning_path(foundation, nodes, edges)
+            if path:
+                paths.append({
+                    "start": foundation["label"],
+                    "sequence": path,
+                    "description": f"Learn {' → '.join(path[:3])} and more"
+                })
+        
+        return paths
+    
+    def _build_learning_path(
+        self,
+        start_node: Dict[str, Any],
+        all_nodes: List[Dict[str, Any]],
+        edges: List[GraphEdge],
+        max_depth: int = 5
+    ) -> List[str]:
+        """
+        Build a learning sequence from a starting node
+        """
+        path = [start_node["label"]]
+        visited = {start_node["id"]}
+        current_id = start_node["id"]
+        
+        for _ in range(max_depth - 1):
+            # Find next connected node with highest similarity
+            next_node = None
+            best_similarity = 0
+            
+            for edge in edges:
+                if edge.source == current_id and edge.target not in visited:
+                    if edge.similarity > best_similarity:
+                        best_similarity = edge.similarity
+                        next_node = edge.target
+            
+            if not next_node:
+                break
+            
+            # Find the node label
+            for node in all_nodes:
+                if node["id"] == next_node:
+                    path.append(node["label"])
+                    visited.add(next_node)
+                    current_id = next_node
+                    break
+        
+        return path
     
     def _calculate_stats(
         self,
