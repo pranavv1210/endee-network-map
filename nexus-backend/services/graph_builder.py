@@ -94,13 +94,26 @@ class GraphBuilder:
         Add document chunks to the knowledge graph
         
         This is where the magic happens:
-        1. Generate embeddings for each chunk
-        2. Store in Endee
-        3. Find semantic relationships
-        4. Create graph nodes and edges
+        1. Create Endee index if needed
+        2. Generate embeddings for each chunk
+        3. Store in Endee
+        4. Find semantic relationships
+        5. Create graph nodes and edges
         """
         try:
             logger.info(f"Adding document {document_id} to graph with {len(chunks)} chunks")
+            
+            # Ensure index exists in Endee (create if first time)
+            try:
+                await self.endee.create_index(
+                    index_name=self.index_name,
+                    dimension=384,  # Hash-based embeddings use 384 dimensions
+                    metric="cosine",
+                    quant="int8"
+                )
+            except Exception as e:
+                logger.info(f"Index creation: {e}")  # May already exist, which is fine
+                pass
             
             # Extract text from chunks
             texts = [chunk.text for chunk in chunks]
