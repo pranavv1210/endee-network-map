@@ -184,6 +184,22 @@ async def semantic_query(body: Dict[str, Any] = Body(...)):
             top_k=top_k,
             similarity_threshold=similarity_threshold
         )
+
+        # Fallback: if Endee returns no results, search in-memory graph nodes
+        if query_text and not result.get("nodes"):
+            query_terms = [term for term in query_text.lower().split() if term]
+            fallback_nodes = []
+
+            for node in graph_builder.nodes.values():
+                haystack = f"{node.label} {node.summary}".lower()
+                if any(term in haystack for term in query_terms):
+                    fallback_nodes.append(node.to_dict())
+
+            result = {
+                "nodes": fallback_nodes[:top_k],
+                "edges": [],
+                "result_count": len(fallback_nodes)
+            }
         
         execution_time = (datetime.utcnow() - start_time).total_seconds() * 1000
         
