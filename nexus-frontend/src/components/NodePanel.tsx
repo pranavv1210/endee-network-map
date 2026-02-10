@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { GraphNode } from '@/types'
-import { X, FileText, Link as LinkIcon, Loader2 } from 'lucide-react'
+import { X, FileText, Link as LinkIcon, Loader2, BookOpen, Lightbulb, Network, ArrowRight } from 'lucide-react'
 import { apiClient } from '@/lib/api'
 
 interface NodePanelProps {
@@ -33,7 +33,7 @@ export default function NodePanel({ node, onClose }: NodePanelProps) {
   return (
     <div className="h-full flex flex-col">
       {/* Header */}
-      <div className="border-b border-dark-700 p-4 flex items-start justify-between">
+      <div className="border-b border-dark-700 p-4 flex items-start justify-between sticky top-0 bg-dark-800 z-10">
         <div className="flex-1">
           <h2 className="text-lg font-semibold text-white mb-1">Node Details</h2>
           <p className="text-sm text-dark-400 line-clamp-2">{node.label}</p>
@@ -54,59 +54,108 @@ export default function NodePanel({ node, onClose }: NodePanelProps) {
           </div>
         ) : (
           <>
-            {/* Summary Section */}
+            {/* FEATURE 2: Smart Summaries */}
             <div>
               <h3 className="text-sm font-medium text-dark-300 mb-2 flex items-center gap-2">
-                <FileText className="w-4 h-4" />
+                <FileText className="w-4 h-4 text-blue-400" />
                 Summary
               </h3>
-              <div className="bg-dark-700 rounded-lg p-4">
-                <p className="text-sm text-dark-200 leading-relaxed">
+              <div className="bg-dark-700 rounded-lg p-4 border border-dark-600">
+                <p className="text-sm text-dark-200 leading-relaxed whitespace-pre-wrap">
                   {node.summary || 'No summary available'}
                 </p>
               </div>
             </div>
 
-            {/* Metadata Section */}
+            {/* Source Document Info */}
             <div>
-              <h3 className="text-sm font-medium text-dark-300 mb-2">Metadata</h3>
-              <div className="bg-dark-700 rounded-lg p-4 space-y-2 text-sm">
-                <div className="flex justify-between">
-                  <span className="text-dark-400">Node ID:</span>
-                  <span className="text-dark-200 font-mono text-xs">{node.id.slice(0, 12)}...</span>
-                </div>
+              <h3 className="text-sm font-medium text-dark-300 mb-2">Source</h3>
+              <div className="bg-dark-700 rounded-lg p-4 border border-dark-600 space-y-2 text-sm">
                 <div className="flex justify-between">
                   <span className="text-dark-400">Document:</span>
-                  <span className="text-dark-200">{node.metadata.filename || 'Unknown'}</span>
+                  <span className="text-dark-200 font-medium">{node.metadata.filename || 'Unknown'}</span>
                 </div>
-                {node.metadata.chunk_index !== undefined && (
-                  <div className="flex justify-between">
-                    <span className="text-dark-400">Chunk:</span>
-                    <span className="text-dark-200">#{node.metadata.chunk_index}</span>
-                  </div>
-                )}
+                <div className="flex justify-between">
+                  <span className="text-dark-400">Chunk:</span>
+                  <span className="text-dark-200">#{node.metadata.chunk_index || 0}</span>
+                </div>
               </div>
             </div>
 
-            {/* Related Concepts */}
+            {/* FEATURE 2: Prerequisites & Requirements */}
+            {nodeDetails?.prerequisites && nodeDetails.prerequisites.length > 0 && (
+              <div>
+                <h3 className="text-sm font-medium text-dark-300 mb-2 flex items-center gap-2">
+                  <BookOpen className="w-4 h-4 text-emerald-400" />
+                  Prerequisites
+                </h3>
+                <div className="space-y-2">
+                  {nodeDetails.prerequisites.map((prereq: string, idx: number) => (
+                    <div
+                      key={idx}
+                      className="bg-emerald-900/20 border border-emerald-700/30 rounded-lg p-3"
+                    >
+                      <p className="text-sm text-emerald-200 flex items-center gap-2">
+                        <div className="w-1.5 h-1.5 rounded-full bg-emerald-400"></div>
+                        {prereq}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* FEATURE 1: Related Concepts with Relationship Discovery */}
             {nodeDetails?.related_nodes && nodeDetails.related_nodes.length > 0 && (
               <div>
                 <h3 className="text-sm font-medium text-dark-300 mb-2 flex items-center gap-2">
-                  <LinkIcon className="w-4 h-4" />
+                  <LinkIcon className="w-4 h-4 text-cyan-400" />
                   Related Concepts ({nodeDetails.related_nodes.length})
                 </h3>
                 <div className="space-y-2">
-                  {nodeDetails.related_nodes.map((related: any) => (
+                  {nodeDetails.related_nodes.slice(0, 5).map((related: any) => (
                     <div
                       key={related.node_id}
-                      className="bg-dark-700 rounded-lg p-3 hover:bg-dark-600 transition-colors cursor-pointer"
+                      className="bg-dark-700 rounded-lg p-3 hover:bg-dark-600/70 transition-colors border border-dark-600 group"
                     >
-                      <div className="flex items-start justify-between gap-2">
-                        <p className="text-sm text-dark-200 flex-1">{related.label}</p>
-                        <span className="text-xs text-primary-400 font-medium">
-                          {(related.similarity * 100).toFixed(0)}%
-                        </span>
+                      <div className="flex items-start justify-between gap-2 mb-1">
+                        <p className="text-sm text-dark-200 flex-1 group-hover:text-white transition-colors">{related.label}</p>
+                        <div className="flex items-center gap-1.5">
+                          <div className="w-2 h-2 rounded-full bg-gradient-to-r from-cyan-400 to-blue-400"></div>
+                          <span className="text-xs text-cyan-400 font-semibold">
+                            {(related.similarity * 100).toFixed(0)}%
+                          </span>
+                        </div>
                       </div>
+                      <div className="w-full h-1.5 bg-dark-800 rounded-full overflow-hidden">
+                        <div
+                          className="h-full bg-gradient-to-r from-cyan-500 to-blue-500"
+                          style={{ width: `${related.similarity * 100}%` }}
+                        ></div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* FEATURE 4: Cross-Document Knowledge */}
+            {nodeDetails?.cross_document_concepts && nodeDetails.cross_document_concepts.length > 0 && (
+              <div>
+                <h3 className="text-sm font-medium text-dark-300 mb-2 flex items-center gap-2">
+                  <Network className="w-4 h-4 text-purple-400" />
+                  Cross-Document Links
+                </h3>
+                <div className="space-y-2">
+                  {nodeDetails.cross_document_concepts.map((concept: any, idx: number) => (
+                    <div
+                      key={idx}
+                      className="bg-purple-900/20 border border-purple-700/30 rounded-lg p-3"
+                    >
+                      <p className="text-sm text-purple-200 font-medium mb-1">{concept.concept}</p>
+                      <p className="text-xs text-purple-300">
+                        From: <span className="font-mono">{concept.source_document?.slice(0, 20)}</span>
+                      </p>
                     </div>
                   ))}
                 </div>
@@ -117,10 +166,10 @@ export default function NodePanel({ node, onClose }: NodePanelProps) {
             {nodeDetails?.connection_count !== undefined && (
               <div>
                 <h3 className="text-sm font-medium text-dark-300 mb-2">Connection Stats</h3>
-                <div className="bg-dark-700 rounded-lg p-4">
+                <div className="bg-dark-700 rounded-lg p-4 border border-dark-600">
                   <div className="flex items-center justify-between">
                     <span className="text-dark-400">Total Connections:</span>
-                    <span className="text-2xl font-bold text-primary-400">
+                    <span className="text-2xl font-bold text-cyan-400">
                       {nodeDetails.connection_count}
                     </span>
                   </div>
@@ -128,22 +177,41 @@ export default function NodePanel({ node, onClose }: NodePanelProps) {
               </div>
             )}
 
-            {/* Intelligence Insights */}
+            {/* FEATURE 3: Learning Recommendations */}
             <div>
-              <h3 className="text-sm font-medium text-dark-300 mb-2">Intelligence Insights</h3>
-              <div className="bg-gradient-to-br from-primary-500/10 to-purple-500/10 border border-primary-500/20 rounded-lg p-4 space-y-2">
+              <h3 className="text-sm font-medium text-dark-300 mb-2 flex items-center gap-2">
+                <Lightbulb className="w-4 h-4 text-yellow-400" />
+                Learning Insights
+              </h3>
+              <div className="bg-gradient-to-br from-blue-500/10 to-cyan-500/10 border border-blue-500/20 rounded-lg p-4 space-y-3">
                 <div className="flex items-start gap-2">
-                  <div className="w-1.5 h-1.5 rounded-full bg-primary-400 mt-1.5"></div>
-                  <p className="text-sm text-dark-300">
-                    This concept is highly connected in your knowledge graph
+                  <div className="w-1.5 h-1.5 rounded-full bg-blue-400 mt-1.5 flex-shrink-0"></div>
+                  <p className="text-sm text-dark-200">
+                    <strong>Connections:</strong> {nodeDetails?.connection_count || 0} related concepts found
                   </p>
                 </div>
+                {nodeDetails?.prerequisites && nodeDetails.prerequisites.length > 0 && (
+                  <div className="flex items-start gap-2">
+                    <div className="w-1.5 h-1.5 rounded-full bg-blue-400 mt-1.5 flex-shrink-0"></div>
+                    <p className="text-sm text-dark-200">
+                      <strong>Prerequisites:</strong> Learn {nodeDetails.prerequisites[0]} first
+                    </p>
+                  </div>
+                )}
                 <div className="flex items-start gap-2">
-                  <div className="w-1.5 h-1.5 rounded-full bg-primary-400 mt-1.5"></div>
-                  <p className="text-sm text-dark-300">
-                    Consider exploring related nodes to expand understanding
+                  <div className="w-1.5 h-1.5 rounded-full bg-blue-400 mt-1.5 flex-shrink-0"></div>
+                  <p className="text-sm text-dark-200">
+                    <strong>Next Steps:</strong> Explore related concepts to deepen knowledge
                   </p>
                 </div>
+                {nodeDetails?.cross_document_concepts && nodeDetails.cross_document_concepts.length > 0 && (
+                  <div className="flex items-start gap-2">
+                    <div className="w-1.5 h-1.5 rounded-full bg-blue-400 mt-1.5 flex-shrink-0"></div>
+                    <p className="text-sm text-dark-200">
+                      <strong>Multi-Source:</strong> Also discussed in other documents (+{nodeDetails.cross_document_concepts.length})
+                    </p>
+                  </div>
+                )}
               </div>
             </div>
           </>

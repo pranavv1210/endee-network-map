@@ -4,6 +4,7 @@ Constructs knowledge graph from embeddings and similarity relationships
 """
 
 import logging
+import datetime
 from typing import List, Dict, Any, Optional, Set, Tuple
 import asyncio
 from collections import defaultdict
@@ -77,6 +78,11 @@ class GraphBuilder:
     """
     Builds and manages the knowledge graph
     Core intelligence layer that creates semantic connections
+    Features:
+    - Relationship discovery via cosine similarity
+    - Smart summaries with context
+    - Learning recommendations
+    - Multi-document cross-linking
     """
     
     def __init__(
@@ -90,6 +96,8 @@ class GraphBuilder:
         self.index_name = index_name
         self.nodes: Dict[str, GraphNode] = {}
         self.edges: List[GraphEdge] = []
+        self.documents: Dict[str, Dict[str, Any]] = {}  # Track document metadata
+        self.node_to_doc: Dict[str, str] = {}  # Map node to document
     
     async def add_document_to_graph(
         self,
@@ -98,16 +106,23 @@ class GraphBuilder:
     ):
         """
         Add document chunks to the knowledge graph
+        Supports multi-document mode with cross-linking
         
-        This is where the magic happens:
-        1. Create Endee index if needed
-        2. Generate embeddings for each chunk
-        3. Store in Endee
-        4. Find semantic relationships
-        5. Create graph nodes and edges
+        Features:
+        - Document tracking for multi-doc support
+        - Smart relationship discovery
+        - Cross-document concept identification
         """
         try:
             logger.info(f"Adding document {document_id} to graph with {len(chunks)} chunks")
+            
+            # Track document metadata
+            self.documents[document_id] = {
+                "filename": chunks[0].metadata.get("filename", "Unknown") if chunks else "Unknown",
+                "chunk_count": len(chunks),
+                "node_count": 0,
+                "created_at": datetime.datetime.utcnow().isoformat()
+            }
             
             # Ensure index exists in Endee (create if first time)
             try:
@@ -147,27 +162,36 @@ class GraphBuilder:
                 metadata=metadata_list
             )
             
-            # Create graph nodes
+            # Create graph nodes with enhanced summaries
+            nodes_added = 0
             for chunk, embedding in zip(chunks, embeddings):
                 node = GraphNode(
                     node_id=chunk.chunk_id,
                     label=self._generate_label(chunk.text),
-                    summary=chunk.text[:150] + "...",
+                    summary=self._generate_smart_summary(chunk.text, chunk.metadata),
                     embedding_id=chunk.chunk_id,
                     document_id=chunk.document_id,
                     metadata={
                         "chunk_index": chunk.chunk_index,
                         "filename": chunk.metadata.get("filename", ""),
-                        "text_length": len(chunk.text)
+                        "text_length": len(chunk.text),
+                        "document_id": chunk.document_id
                     },
                     embedding=embedding  # Store for similarity computation
                 )
                 self.nodes[node.node_id] = node
+                self.node_to_doc[node.node_id] = document_id
+                nodes_added += 1
+            
+            self.documents[document_id]["node_count"] = nodes_added
             
             # Find relationships (edges) between this document and existing knowledge
             await self._discover_relationships(chunk_ids, embeddings)
             
-            logger.info(f"Successfully added document {document_id} to graph")
+            # Find cross-document relationships
+            self._find_cross_document_relationships(chunk_ids)
+            
+            logger.info(f"Successfully added document {document_id} to graph ({nodes_added} nodes)")
             
         except Exception as e:
             logger.error(f"Error adding document to graph: {e}")
@@ -185,6 +209,153 @@ class GraphBuilder:
             label = label[:47] + "..."
         
         return label
+    
+    def _generate_smart_summary(
+        self,
+        text: str,
+        metadata: Dict[str, Any]
+    ) -> str:
+        """
+        Generate enhanced summaries with context and domain knowledge
+        Feature: Smart Summaries
+        Includes:
+        - Main concept description
+        - Key context
+        - Related domain
+        - Practical application hints
+        """
+        # Get first 200 chars as base
+        base_text = text[:200].strip()
+        
+        # Add domain markers based on keywords
+        domain_markers = {
+            "neural": "AI & Deep Learning",
+            "transform": "NLP & Sequence Learning",
+            "reinforcement": "Machine Learning & Control",
+            "computer vision": "Image Processing & AI",
+            "embedding": "Vector Space & Representation",
+            "machine learning": "Data Science & Predictive Analytics",
+            "algorithm": "Computational Efficiency",
+            "optimization": "Performance & Training",
+            "attention": "NLP & Transformers",
+            "gradient": "Optimization & Training"
+        }
+        
+        domain = "General AI/ML Concepts"
+        text_lower = text.lower()
+        for keyword, dom in domain_markers.items():
+            if keyword in text_lower:
+                domain = dom
+                break
+        
+        # Build smart summary
+        summary = f"{base_text}\n\n"
+        summary += f"📚 Domain: {domain}\n"
+        
+        # Add practical hints based on keywords
+        if any(word in text_lower for word in ["attention", "transformer", "bert", "gpt"]):
+            summary += "💡 Key Insight: Foundation for modern NLP systems\n"
+        elif any(word in text_lower for word in ["neural", "network", "layer",  "activation"]):
+            summary += "💡 Key Insight: Core component of deep learning\n"
+        elif any(word in text_lower for word in ["reinforcement", "agent", "reward", "policy"]):
+            summary += "💡 Key Insight: Enables adaptive decision-making\n"
+        
+        if len(summary) > 300:
+            summary = summary[:297] + "..."
+        
+        return summary
+    
+    def _find_cross_document_relationships(
+        self,
+        new_chunk_ids: List[str]
+    ):
+        """
+        Feature: Multi-Document Knowledge
+        Identify concepts that appear in multiple documents
+        Creates special edges for cross-document relationships
+        """
+        try:
+            new_docs = set(self.node_to_doc.get(nid) for nid in new_chunk_ids if nid in self.node_to_doc)
+            
+            if len(new_docs) <= 1:
+                logger.debug("Single document, skipping cross-doc analysis")
+                return
+            
+            # Find common concepts across documents
+            # Group nodes by document
+            docs_nodes = defaultdict(list)
+            for node_id, doc_id in self.node_to_doc.items():
+                if node_id in self.nodes:
+                    docs_nodes[doc_id].append(node_id)
+            
+            # For each pair of documents, find similar concepts
+            docs_list = list(new_docs)
+            for i, doc_a in enumerate(docs_list):
+                for doc_b in docs_list[i+1:]:
+                    self._find_common_concepts(doc_a, doc_b, docs_nodes)
+            
+            logger.info("Completed cross-document relationship analysis")
+            
+        except Exception as e:
+            logger.error(f"Error in cross-document analysis: {e}")
+    
+    def _find_common_concepts(
+        self,
+        doc_a: str,
+        doc_b: str,
+        docs_nodes: Dict[str, List[str]]
+    ):
+        """
+        Find common concepts between two documents
+        Create high-priority edges for sharing concepts
+        """
+        nodes_a = docs_nodes.get(doc_a, [])
+        nodes_b = docs_nodes.get(doc_b, [])
+        
+        common_edges_added = 0
+        
+        for node_a_id in nodes_a:
+            if node_a_id not in self.nodes:
+                continue
+            node_a = self.nodes[node_a_id]
+            
+            for node_b_id in nodes_b:
+                if node_b_id not in self.nodes:
+                    continue
+                node_b = self.nodes[node_b_id]
+                
+                # Skip if no embeddings
+                if node_a.embedding is None or node_b.embedding is None:
+                    continue
+                
+                # Calculate similarity
+                similarity = self.embeddings.compute_similarity(
+                    node_a.embedding,
+                    node_b.embedding
+                )
+                
+                # Lower threshold for cross-doc (0.4 instead of 0.5) to find common concepts
+                if similarity >= 0.4:
+                    # Check if edge already exists
+                    exists = any(
+                        (e.source == node_a_id and e.target == node_b_id) or
+                        (e.source == node_b_id and e.target == node_a_id)
+                        for e in self.edges
+                    )
+                    
+                    if not exists:
+                        edge = GraphEdge(
+                            source=node_a_id,
+                            target=node_b_id,
+                            similarity=float(similarity),
+                            relationship_type="cross_document_similarity"
+                        )
+                        self.edges.append(edge)
+                        common_edges_added += 1
+                        logger.debug(f"Cross-doc edge: '{node_a.label}' → '{node_b.label}' ({similarity:.3f})")
+        
+        if common_edges_added > 0:
+            logger.info(f"Added {common_edges_added} cross-document relationships between '{doc_a}' and '{doc_b}'")
     
     async def _discover_relationships(
         self,
@@ -257,10 +428,14 @@ class GraphBuilder:
         max_nodes: int = 100
     ) -> Dict[str, Any]:
         """
-        Build the complete knowledge graph with relationship metadata
+        Build the complete knowledge graph with ALL features:
+        1. Relationship Discovery - edges with similarity scores
+        2. Smart Summaries - enriched node descriptions
+        3. Learning Recommendations - ordered learning paths
+        4. Multi-Document Knowledge - cross-document relationships
         
         Returns:
-            Graph structure with nodes, edges, learning paths, and statistics
+            Complete graph structure with enhanced metadata
         """
         try:
             # Get all nodes (limit for performance)
@@ -272,16 +447,28 @@ class GraphBuilder:
                 if edge.similarity >= similarity_threshold
             ]
             
-            # Enrich nodes with relationship information
+            # Enrich nodes with comprehensive information
             enriched_nodes = []
             for node in nodes_list:
                 node_dict = node.to_dict()
                 
-                # Find related nodes (prerequisites and connections)
+                # FEATURE 1: Relationship Discovery
+                # Find related nodes and show similarity scores
                 related = self._find_related_nodes(node.node_id, filtered_edges, nodes_list)
                 node_dict["related_concepts"] = related
                 
-                # Add learning prerequisites
+                # FEATURE 4: Multi-Document Knowledge
+                # Show which document this comes from and cross-doc connections
+                cross_doc_connections = self._find_document_connections(
+                    node.node_id,
+                    node.document_id,
+                    nodes_list
+                )
+                node_dict["cross_document_concepts"] = cross_doc_connections
+                node_dict["source_document"] = self.documents.get(node.document_id, {})
+                
+                # FEATURE 2: Smart Summaries (already in node.summary from add_document_to_graph)
+                # Add prerequisites which are part of smart recommendations
                 node_dict["prerequisites"] = self._infer_prerequisites(node.label)
                 
                 enriched_nodes.append(node_dict)
@@ -289,19 +476,71 @@ class GraphBuilder:
             # Calculate graph statistics
             stats = self._calculate_stats(nodes_list, filtered_edges)
             
-            # Generate learning paths
+            # FEATURE 3: Learning Recommendations
+            # Generate ordered learning paths
             learning_paths = self._generate_learning_paths(enriched_nodes, filtered_edges)
+            
+            # Add multi-document statistics
+            multi_doc_stats = {
+                "total_documents": len(self.documents),
+                "documents": list(self.documents.values()),
+                "cross_document_edges": len([
+                    e for e in filtered_edges 
+                    if e.relationship_type == "cross_document_similarity"
+                ]),
+                "same_document_edges": len([
+                    e for e in filtered_edges 
+                    if e.relationship_type != "cross_document_similarity"
+                ])
+            }
             
             return {
                 "nodes": enriched_nodes,
                 "edges": [edge.to_dict() for edge in filtered_edges],
                 "stats": stats,
+                "multi_document_stats": multi_doc_stats,
                 "learning_paths": learning_paths
             }
             
         except Exception as e:
             logger.error(f"Error building graph: {e}")
             raise
+    
+    def _find_document_connections(
+        self,
+        node_id: str,
+        current_doc: str,
+        all_nodes: List[GraphNode]
+    ) -> List[Dict[str, Any]]:
+        """
+        Find concepts from same node's document referenced in other documents
+        Cross-Document Knowledge feature
+        """
+        connections = []
+        node_map = {n.node_id: n for n in all_nodes}
+        
+        # Find all related nodes from other documents
+        for edge in self.edges:
+            if edge.source == node_id:
+                target_node = node_map.get(edge.target)
+                if target_node and target_node.document_id != current_doc:
+                    connections.append({
+                        "concept": target_node.label,
+                        "source_document": target_node.document_id,
+                        "similarity": edge.similarity,
+                        "relevance": "cross_document"
+                    })
+            elif edge.target == node_id:
+                source_node = node_map.get(edge.source)
+                if source_node and source_node.document_id != current_doc:
+                    connections.append({
+                        "concept": source_node.label,
+                        "source_document": source_node.document_id,
+                        "similarity": edge.similarity,
+                        "relevance": "cross_document"
+                    })
+        
+        return sorted(connections, key=lambda x: x["similarity"], reverse=True)[:3]
     
     def _find_related_nodes(
         self,
