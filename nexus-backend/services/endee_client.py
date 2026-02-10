@@ -164,7 +164,15 @@ class EndeeClient:
                 )
                 
                 response.raise_for_status()
-                return response.json()
+                data = response.json()
+                if isinstance(data, dict):
+                    for key in ("results", "result", "data", "vectors", "items", "matches", "hits"):
+                        if key in data and isinstance(data[key], list):
+                            return data[key]
+                    return []
+                if isinstance(data, list):
+                    return data
+                return []
                 
         except Exception as e:
             logger.error(f"Error searching vectors: {e}")

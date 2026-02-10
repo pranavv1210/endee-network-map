@@ -72,11 +72,22 @@ class QueryEngine:
                     "message": "No documents uploaded yet or index is empty"
                 }
             
-            # Filter by similarity threshold
+            # Filter by similarity threshold (fall back if empty)
+            def _score(result: Dict[str, Any]) -> float:
+                return float(
+                    result.get("score")
+                    or result.get("similarity")
+                    or result.get("distance")
+                    or 0
+                )
+
             filtered_results = [
                 result for result in search_results
-                if result.get("distance", 0) >= similarity_threshold
+                if _score(result) >= similarity_threshold
             ]
+
+            if not filtered_results and search_results:
+                filtered_results = search_results
             
             # Build nodes from results
             nodes = []
@@ -84,13 +95,21 @@ class QueryEngine:
             
             for result in filtered_results:
                 node_id = result.get("id")
-                metadata = result.get("metadata", {})
-                similarity = result.get("distance", 0)
+                metadata = (
+                    result.get("metadata")
+                    or result.get("meta")
+                    or result.get("payload")
+                    or {}
+                )
+                similarity = _score(result)
                 
+                text_value = metadata.get("text", "")
+                label = text_value[:50] + "..." if text_value else "Result"
+
                 node = {
                     "id": node_id,
-                    "label": metadata.get("text", "")[:50] + "...",
-                    "summary": metadata.get("text", ""),
+                    "label": label,
+                    "summary": text_value,
                     "embedding_id": node_id,
                     "document_id": metadata.get("document_id", ""),
                     "metadata": {
