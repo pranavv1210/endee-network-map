@@ -99,7 +99,26 @@ export default function LandingPage() {
             ))}
           </div>
 
-          {/* Architecture Section */}
+          {/* Credibility Metrics Section */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-6 mb-16 sm:mb-20">
+            {[
+              { value: '<10ms', label: 'Search Latency', color: 'from-cyan-500 to-blue-500' },
+              { value: '384D', label: 'Embeddings', color: 'from-blue-500 to-indigo-500' },
+              { value: 'HNSW', label: 'Algorithm', color: 'from-indigo-500 to-purple-500' },
+              { value: 'C++', label: 'Core Engine', color: 'from-purple-500 to-pink-500' }
+            ].map((metric, idx) => (
+              <div
+                key={idx}
+                className="p-4 sm:p-6 bg-gradient-to-br from-dark-800 to-dark-700 backdrop-blur border border-dark-700 rounded-lg text-center hover:border-cyan-500/30 transition-all"
+              >
+                <div className={`h-1 bg-gradient-to-r ${metric.color} rounded-full mb-3 opacity-60`}></div>
+                <div className="text-lg sm:text-xl font-bold bg-gradient-to-r from-blue-400 to-cyan-400 bg-clip-text text-transparent">
+                  {metric.value}
+                </div>
+                <div className="text-xs sm:text-sm text-dark-400 mt-1">{metric.label}</div>
+              </div>
+            ))}
+          </div>
           <section className="mb-16 sm:mb-20">
             <h3 className="text-2xl sm:text-3xl font-bold mb-6 sm:mb-8 text-center">System Architecture</h3>
             
@@ -330,6 +349,34 @@ export default function LandingPage() {
                   MIT License
                 </a>
               </p>
+            </div>
+          </section>
+
+          {/* Deployment & Credibility Badges */}
+          <section className="mb-16 py-8 border-t border-dark-700">
+            <div className="max-w-2xl mx-auto">
+              <p className="text-center text-xs sm:text-sm text-dark-400 mb-6 uppercase tracking-wider">Deployed & Production Ready</p>
+              <div className="flex flex-wrap justify-center gap-3 sm:gap-4">
+                {[
+                  { icon: '⚡', label: 'Vercel', desc: 'Frontend' },
+                  { icon: '🐍', label: 'Render', desc: 'Backend' },
+                  { icon: '📦', label: 'Open Source', desc: 'MIT License' },
+                  { icon: '🔒', label: 'Privacy First', desc: 'Device Isolated' }
+                ].map((badge, idx) => (
+                  <div
+                    key={idx}
+                    className="px-3 py-2 sm:px-4 sm:py-2.5 bg-dark-800/60 border border-dark-700 rounded-lg hover:border-cyan-500/30 transition-colors"
+                  >
+                    <div className="flex items-center gap-2">
+                      <span className="text-lg">{badge.icon}</span>
+                      <div className="text-left">
+                        <div className="text-xs sm:text-sm font-semibold text-white">{badge.label}</div>
+                        <div className="text-xs text-dark-400">{badge.desc}</div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
           </section>
         </section>
