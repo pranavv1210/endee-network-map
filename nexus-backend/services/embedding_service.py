@@ -1,11 +1,9 @@
 """
 Embedding Service
-Generates vector embeddings for text using TF-IDF + PCA
+Generates vector embeddings for text using simple hashing (no ML library dependencies)
 """
 
-from sklearn.feature_extraction.text import TfidfVectorizer
-from sklearn.decomposition import PCA
-import numpy as np
+import hashlib
 import logging
 from typing import List, Union
 
@@ -13,12 +11,12 @@ logger = logging.getLogger(__name__)
 
 class EmbeddingService:
     """
-    Service for generating embeddings using TF-IDF + PCA
-    Fast, lightweight, no compilation needed
+    Service for generating embeddings using deterministic hashing
+    No external ML dependencies - pure Python implementation
     Dimension: 384 (compatible with Endee)
     """
     
-    def __init__(self, model_name: str = "tfidf-pca", dimension: int = 384):
+    def __init__(self, model_name: str = "hash-based", dimension: int = 384):
         """
         Initialize embedding model
         
@@ -28,16 +26,36 @@ class EmbeddingService:
         """
         self.model_name = model_name
         self.dimension = dimension
-        self.vectorizer = TfidfVectorizer(
-            max_features=5000,
-            ngram_range=(1, 2),
-            min_df=1,
-            lowercase=True,
-            strip_accents='unicode'
-        )
-        self.pca = None
-        self.fitted = False
         logger.info(f"Embedding model initialized: {model_name} (dim={dimension})")
+    
+    def _hash_to_vector(self, text: str) -> List[float]:
+        """Convert text to deterministic embedding vector via hashing"""
+        # Generate hash
+        hash_obj = hashlib.sha256(text.encode())
+        hash_bytes = hash_obj.digest()
+        
+        # Convert 32 bytes to 384-dim vector by repeating and interpolating
+        vector = []
+        for i in range(self.dimension):
+            byte_idx = i % len(hash_bytes)
+            next_byte_idx = (i + 1) % len(hash_bytes)
+            
+            # Blend adjacent bytes for smooth interpolation
+            byte_val = hash_bytes[byte_idx]
+            next_byte_val = hash_bytes[next_byte_idx]
+            t = (i % len(hash_bytes)) / len(hash_bytes)
+            
+            blended = byte_val * (1 - t) + next_byte_val * t
+            # Normalize to [-1, 1] range
+            normalized = (blended / 255.0) * 2 - 1
+            vector.append(normalized)
+        
+        # Apply normalization for cosine similarity
+        norm = sum(x**2 for x in vector) ** 0.5
+        if norm > 0:
+            vector = [x / norm for x in vector]
+        
+        return vector
     
     def encode(
         self,
@@ -62,26 +80,8 @@ class EmbeddingService:
             if is_single:
                 texts = [texts]
             
-            # Generate TF-IDF vectors
-            if not self.fitted:
-                # First time: fit on these texts
-                tfidf_matrix = self.vectorizer.fit_transform(texts)
-                self.fitted = True
-                
-                # Initialize PCA
-                self.pca = PCA(n_components=self.dimension, random_state=42)
-                embeddings = self.pca.fit_transform(tfidf_matrix.toarray())
-            else:
-                # Transform using existing vectorizer
-                tfidf_matrix = self.vectorizer.transform(texts)
-                embeddings = self.pca.transform(tfidf_matrix.toarray())
-            
-            # Normalize embeddings
-            norms = np.linalg.norm(embeddings, axis=1, keepdims=True)
-            embeddings = embeddings / (norms + 1e-9)
-            
-            # Convert to list format
-            embeddings_list = embeddings.tolist()
+            # Generate embeddings via hashing
+            embeddings_list = [self._hash_to_vector(text) for text in texts]
             
             # Return single vector if input was single text
             if is_single:
@@ -126,13 +126,17 @@ class EmbeddingService:
             Similarity score (0-1, higher is more similar)
         """
         try:
-            vec1 = np.array(embedding1)
-            vec2 = np.array(embedding2)
+            # Cosine similarity using pure Python
+            dot_product = sum(a * b for a, b in zip(embedding1, embedding2))
+            norm1 = sum(x**2 for x in embedding1) ** 0.5
+            norm2 = sum(x**2 for x in embedding2) ** 0.5
             
-            # Cosine similarity
-            similarity = np.dot(vec1, vec2) / (np.linalg.norm(vec1) * np.linalg.norm(vec2))
+            if norm1 == 0 or norm2 == 0:
+                return 0.0
             
-            return float(similarity)
+            similarity = dot_product / (norm1 * norm2)
+            # Convert to 0-1 range (from -1 to 1)
+            return float((similarity + 1) / 2)
             
         except Exception as e:
             logger.error(f"Error computing similarity: {e}")
@@ -147,6 +151,6 @@ class EmbeddingService:
         return {
             "model_name": self.model_name,
             "dimension": self.dimension,
-            "type": "TF-IDF with PCA",
-            "fitted": self.fitted
+            "type": "Deterministic Hash-based Embeddings",
+            "implementation": "Pure Python, no dependencies"
         }
