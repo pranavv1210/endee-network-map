@@ -150,7 +150,7 @@ export default function LandingPage() {
                 <text x="910" y="50" textAnchor="middle" fontSize="18" fontWeight="bold" fill="#f97316">ENDEE DB</text>
                 <text x="910" y="75" textAnchor="middle" fontSize="13" fill="#fed7aa">High-Performance C++</text>
                 <text x="910" y="93" textAnchor="middle" fontSize="13" fill="#fed7aa">HNSW Indexing</text>
-                <text x="910" y="111" textAnchor="middle" fontSize="13" fill="#fed7aa">Semantic <10ms</text>
+                <text x="910" y="111" textAnchor="middle" fontSize="13" fill="#fed7aa">Semantic &lt;10ms</text>
                 <text x="910" y="129" textAnchor="middle" fontSize="13" fill="#fed7aa">Device-Isolated</text>
 
                 {/* Separator */}
