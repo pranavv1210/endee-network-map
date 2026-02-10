@@ -43,29 +43,29 @@ export default function LandingPage() {
         </header>
 
         {/* Hero Section */}
-        <section className="max-w-6xl mx-auto px-6 py-20 lg:py-32">
-          <div className="text-center mb-16">
-            <h2 className="text-5xl lg:text-7xl font-bold mb-6 leading-tight">
+        <section className="max-w-6xl mx-auto px-4 sm:px-6 py-12 sm:py-20 lg:py-32">
+          <div className="text-center mb-12 sm:mb-16">
+            <h2 className="text-3xl sm:text-5xl lg:text-7xl font-bold mb-4 sm:mb-6 leading-tight">
               Transform Documents Into
               <br />
               <span className="bg-gradient-to-r from-blue-400 to-cyan-400 bg-clip-text text-transparent">
                 Living Intelligence Networks
               </span>
             </h2>
-            <p className="text-xl text-gray-400 mb-8 max-w-2xl mx-auto leading-relaxed">
+            <p className="text-base sm:text-lg lg:text-xl text-gray-400 mb-6 sm:mb-8 max-w-2xl mx-auto leading-relaxed">
               Upload documents and explore semantic relationships. Nexus automatically discovers concept connections and creates interactive knowledge graphs.
             </p>
             
             <button
               onClick={handleTryNow}
-              className="px-8 py-4 bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 rounded-lg font-semibold text-lg transition-all duration-300 transform hover:scale-105 shadow-lg shadow-blue-500/30"
+              className="px-6 sm:px-8 py-3 sm:py-4 bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 rounded-lg font-semibold text-base sm:text-lg transition-all duration-300 transform hover:scale-105 active:scale-95 shadow-lg shadow-blue-500/30"
             >
               Start Exploring Now →
             </button>
           </div>
 
           {/* Feature Cards */}
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 mb-20">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-16 sm:mb-20">
             {[
               {
                 icon: <FileText className="w-6 h-6" />,
@@ -90,22 +90,22 @@ export default function LandingPage() {
             ].map((feature, idx) => (
               <div
                 key={idx}
-                className="p-6 bg-dark-800/50 backdrop-blur border border-dark-700 rounded-lg hover:border-blue-500/50 transition-all duration-300 hover:shadow-lg hover:shadow-blue-500/20"
+                className="p-4 sm:p-6 bg-dark-800/50 backdrop-blur border border-dark-700 rounded-lg hover:border-blue-500/50 transition-all duration-300 hover:shadow-lg hover:shadow-blue-500/20"
               >
-                <div className="text-blue-400 mb-3">{feature.icon}</div>
-                <h3 className="font-semibold mb-2">{feature.title}</h3>
-                <p className="text-gray-400 text-sm">{feature.desc}</p>
+                <div className="text-blue-400 mb-3 text-lg">{feature.icon}</div>
+                <h3 className="font-semibold mb-2 text-sm sm:text-base">{feature.title}</h3>
+                <p className="text-gray-400 text-xs sm:text-sm">{feature.desc}</p>
               </div>
             ))}
           </div>
 
           {/* Architecture Section */}
-          <section className="mb-20">
-            <h3 className="text-3xl font-bold mb-8 text-center">System Architecture</h3>
+          <section className="mb-16 sm:mb-20">
+            <h3 className="text-2xl sm:text-3xl font-bold mb-6 sm:mb-8 text-center">System Architecture</h3>
             
             {/* Visual Architecture Diagram */}
-            <div className="bg-dark-800/30 backdrop-blur border border-dark-700 rounded-lg p-8 mb-8 overflow-x-auto">
-              <svg className="w-full h-auto min-h-[600px]" viewBox="0 0 1400 650" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet">
+            <div className="bg-dark-800/30 backdrop-blur border border-dark-700 rounded-lg p-4 md:p-8 mb-8 overflow-x-auto">
+              <svg className="w-full h-auto min-h-[400px] md:min-h-[600px]" viewBox="0 0 1400 650" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet">
                 <defs>
                   <marker id="arrowhead" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
                     <polygon points="0 0, 10 3, 0 6" fill="#06b6d4" />
@@ -223,7 +223,7 @@ export default function LandingPage() {
               </svg>
             </div>
 
-            <div className="mt-8 grid md:grid-cols-3 gap-6">
+            <div className="mt-8 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
               {[
                 {
                   title: 'Frontend',
@@ -238,11 +238,11 @@ export default function LandingPage() {
                   techs: ['Endee', 'C++', '384-dim embeddings', 'Cosine similarity']
                 }
               ].map((stack, idx) => (
-                <div key={idx} className="bg-dark-800/50 backdrop-blur border border-dark-700 rounded-lg p-6">
-                  <h4 className="font-semibold mb-4 text-blue-400">{stack.title}</h4>
+                <div key={idx} className="bg-dark-800/50 backdrop-blur border border-dark-700 rounded-lg p-4 sm:p-6">
+                  <h4 className="font-semibold mb-4 text-blue-400 text-sm sm:text-base">{stack.title}</h4>
                   <ul className="space-y-2">
                     {stack.techs.map((tech, i) => (
-                      <li key={i} className="text-gray-400 text-sm flex items-center gap-2">
+                      <li key={i} className="text-gray-400 text-xs sm:text-sm flex items-center gap-2">
                         <div className="w-1 h-1 bg-cyan-400 rounded-full"></div>
                         {tech}
                       </li>
@@ -254,10 +254,10 @@ export default function LandingPage() {
           </section>
 
           {/* How It Works */}
-          <section className="mb-20">
-            <h3 className="text-3xl font-bold mb-8 text-center">How It Works</h3>
+          <section className="mb-16 sm:mb-20">
+            <h3 className="text-2xl sm:text-3xl font-bold mb-6 sm:mb-8 text-center">How It Works</h3>
             
-            <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
               {[
                 { step: 1, title: 'Upload', desc: 'Add your document' },
                 { step: 2, title: 'Process', desc: 'Extract & chunk text' },
@@ -265,12 +265,12 @@ export default function LandingPage() {
                 { step: 4, title: 'Visualize', desc: 'Interactive graph' }
               ].map((item, idx) => (
                 <div key={idx} className="relative">
-                  <div className="bg-dark-800/50 backdrop-blur border border-dark-700 rounded-lg p-6 text-center">
-                    <div className="w-12 h-12 bg-gradient-to-br from-blue-400 to-cyan-400 rounded-full flex items-center justify-center text-dark-900 font-bold text-lg mx-auto mb-4">
+                  <div className="bg-dark-800/50 backdrop-blur border border-dark-700 rounded-lg p-4 sm:p-6 text-center">
+                    <div className="w-10 sm:w-12 h-10 sm:h-12 bg-gradient-to-br from-blue-400 to-cyan-400 rounded-full flex items-center justify-center text-dark-900 font-bold text-sm sm:text-lg mx-auto mb-3 sm:mb-4">
                       {item.step}
                     </div>
-                    <h4 className="font-semibold mb-2">{item.title}</h4>
-                    <p className="text-gray-400 text-sm">{item.desc}</p>
+                    <h4 className="font-semibold mb-2 text-sm sm:text-base">{item.title}</h4>
+                    <p className="text-gray-400 text-xs sm:text-sm">{item.desc}</p>
                   </div>
                   {idx < 3 && (
                     <div className="hidden lg:block absolute top-1/2 -right-2 text-cyan-400 text-2xl">→</div>
@@ -281,10 +281,10 @@ export default function LandingPage() {
           </section>
 
           {/* Credits Section */}
-          <section className="mb-16 border-t border-dark-700 pt-16">
-            <h3 className="text-3xl font-bold mb-8 text-center">Built With ⚡</h3>
+          <section className="mb-12 sm:mb-16 border-t border-dark-700 pt-12 sm:pt-16">
+            <h3 className="text-2xl sm:text-3xl font-bold mb-6 sm:mb-8 text-center">Built With ⚡</h3>
             
-            <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-8">
               {[
                 {
                   name: 'FastAPI',
@@ -309,19 +309,19 @@ export default function LandingPage() {
               ].map((tech, idx) => (
                 <div
                   key={idx}
-                  className="bg-dark-800/50 backdrop-blur border border-dark-700 rounded-lg p-6 hover:border-blue-500/50 transition-all duration-300"
+                  className="bg-dark-800/50 backdrop-blur border border-dark-700 rounded-lg p-4 sm:p-6 hover:border-blue-500/50 transition-all duration-300"
                 >
-                  <div className={`inline-block px-3 py-1 rounded-full bg-gradient-to-r ${tech.color} text-dark-900 text-sm font-semibold mb-3`}>
+                  <div className={`inline-block px-2 sm:px-3 py-1 rounded-full bg-gradient-to-r ${tech.color} text-dark-900 text-xs sm:text-sm font-semibold mb-3`}>
                     {tech.name}
                   </div>
-                  <p className="text-gray-400 text-sm">{tech.desc}</p>
+                  <p className="text-gray-400 text-xs sm:text-sm">{tech.desc}</p>
                 </div>
               ))}
             </div>
 
-            <div className="text-center py-8 border-t border-dark-700">
-              <p className="text-gray-400 mb-2">Made by Pranav Venu</p>
-              <p className="text-sm text-gray-500">
+            <div className="text-center py-6 sm:py-8 border-t border-dark-700">
+              <p className="text-gray-400 mb-2 text-sm sm:text-base">Made by Pranav Venu</p>
+              <p className="text-xs sm:text-sm text-gray-500">
                 <a href="https://github.com/pranavv1210/endee-network-map" className="text-blue-400 hover:text-cyan-400 transition-colors">
                   View on GitHub
                 </a>
@@ -335,17 +335,17 @@ export default function LandingPage() {
         </section>
 
         {/* Final CTA */}
-        <section className="border-t border-dark-700 py-16">
-          <div className="max-w-3xl mx-auto text-center px-6">
-            <h3 className="text-3xl lg:text-4xl font-bold mb-6">
+        <section className="border-t border-dark-700 py-12 sm:py-16">
+          <div className="max-w-3xl mx-auto text-center px-4 sm:px-6">
+            <h3 className="text-2xl sm:text-3xl lg:text-4xl font-bold mb-4 sm:mb-6">
               Ready to Explore Your Knowledge?
             </h3>
-            <p className="text-gray-400 mb-8">
+            <p className="text-sm sm:text-base lg:text-lg text-gray-400 mb-6 sm:mb-8">
               Start building your semantic knowledge graph in seconds. No authentication required, completely private per device.
             </p>
             <button
               onClick={handleTryNow}
-              className="px-8 py-4 bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 rounded-lg font-semibold text-lg transition-all duration-300 transform hover:scale-105 shadow-lg shadow-blue-500/30"
+              className="px-6 sm:px-8 py-3 sm:py-4 bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 rounded-lg font-semibold text-base sm:text-lg transition-all duration-300 transform hover:scale-105 active:scale-95 shadow-lg shadow-blue-500/30"
             >
               Launch Nexus →
             </button>
@@ -353,7 +353,7 @@ export default function LandingPage() {
         </section>
 
         {/* Footer */}
-        <footer className="border-t border-dark-700 py-8 text-center text-gray-500 text-sm">
+        <footer className="border-t border-dark-700 py-6 sm:py-8 text-center text-gray-500 text-xs sm:text-sm px-4">
           <p>© 2026 Nexus. Where knowledge becomes intelligence.</p>
         </footer>
       </div>
