@@ -5,8 +5,9 @@ uvicorn[standard]==0.24.0
 python-multipart==0.0.6
 httpx==0.25.2
 pydantic==2.3.0
-sentence-transformers==5.2.2
+transformers==4.47.1
+torch==2.4.0
+numpy==1.25.2
 PyPDF2==3.0.1
 python-docx==1.0.0
-numpy==1.25.2
 python-dotenv==1.0.0

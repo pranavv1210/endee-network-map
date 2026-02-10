@@ -1,35 +1,44 @@
 """
 Embedding Service
-Generates vector embeddings for text using sentence-transformers
+Generates vector embeddings for text using HuggingFace transformers
 """
 
-from sentence_transformers import SentenceTransformer
+from transformers import AutoTokenizer, AutoModel
+import torch
 import logging
 from typing import List, Union
 import numpy as np
 
 logger = logging.getLogger(__name__)
 
+def mean_pooling(model_output, attention_mask):
+    """Mean Pooling - Take attention mask into account for correct averaging"""
+    token_embeddings = model_output[0]
+    input_mask_expanded = attention_mask.unsqueeze(-1).expand(token_embeddings.size()).float()
+    return torch.sum(token_embeddings * input_mask_expanded, 1) / torch.clamp(input_mask_expanded.sum(1), min=1e-9)
+
 class EmbeddingService:
     """
-    Service for generating embeddings using sentence-transformers
-    Using all-MiniLM-L6-v2: Fast, efficient, 384-dimensional embeddings
+    Service for generating embeddings using HuggingFace transformers
+    Using sentence-transformers/all-MiniLM-L6-v2: Fast, efficient, 384-dimensional embeddings
     """
     
-    def __init__(self, model_name: str = "all-MiniLM-L6-v2"):
+    def __init__(self, model_name: str = "sentence-transformers/all-MiniLM-L6-v2"):
         """
         Initialize embedding model
         
         Args:
-            model_name: Name of the sentence-transformer model
-                       Default: all-MiniLM-L6-v2 (384 dims, fast, good quality)
+            model_name: Name of the HuggingFace model
+                       Default: sentence-transformers/all-MiniLM-L6-v2 (384 dims, fast, good quality)
         """
         self.model_name = model_name
         logger.info(f"Loading embedding model: {model_name}")
         
         try:
-            self.model = SentenceTransformer(model_name)
-            self.dimension = self.model.get_sentence_embedding_dimension()
+            self.tokenizer = AutoTokenizer.from_pretrained(model_name)
+            self.model = AutoModel.from_pretrained(model_name)
+            # Get embedding dimension from model config
+            self.dimension = self.model.config.hidden_size
             logger.info(f"Embedding model loaded successfully. Dimension: {self.dimension}")
         except Exception as e:
             logger.error(f"Failed to load embedding model: {e}")
@@ -58,16 +67,27 @@ class EmbeddingService:
             if is_single:
                 texts = [texts]
             
-            # Generate embeddings
-            embeddings = self.model.encode(
-                texts,
-                batch_size=batch_size,
-                show_progress_bar=show_progress,
-                normalize_embeddings=True  # Normalize for cosine similarity
-            )
+            # Generate embeddings using transformers
+            embeddings = []
+            for i in range(0, len(texts), batch_size):
+                batch = texts[i:i+batch_size]
+                
+                # Tokenize and encode
+                encoded_input = self.tokenizer(batch, padding=True, truncation=True, return_tensors='pt')
+                
+                with torch.no_grad():
+                    model_output = self.model(**encoded_input)
+                
+                # Mean pooling
+                sentence_embeddings = mean_pooling(model_output, encoded_input['attention_mask'])
+                
+                # Normalize embeddings
+                sentence_embeddings = torch.nn.functional.normalize(sentence_embeddings, p=2, dim=1)
+                
+                embeddings.extend(sentence_embeddings.cpu().numpy().tolist())
             
             # Convert to list format
-            embeddings_list = embeddings.tolist()
+            embeddings_list = embeddings
             
             # Return single vector if input was single text
             if is_single:
