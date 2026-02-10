@@ -3,10 +3,9 @@ Nexus Backend - FastAPI Application
 Vector-native knowledge intelligence system powered by Endee
 """
 
-from fastapi import FastAPI, UploadFile, File, HTTPException, BackgroundTasks
+from fastapi import FastAPI, UploadFile, File, HTTPException, BackgroundTasks, Body
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
-from pydantic import BaseModel
 from typing import List, Optional, Dict, Any
 import httpx
 import os
@@ -53,45 +52,7 @@ document_processor = DocumentProcessor()
 graph_builder = GraphBuilder(endee_client, embedding_service)
 query_engine = QueryEngine(endee_client, embedding_service)
 
-# --- Pydantic Models ---
-
-class DocumentUploadResponse(BaseModel):
-    document_id: str
-    filename: str
-    chunks_created: int
-    status: str
-
-class Node(BaseModel):
-    id: str
-    label: str
-    summary: str
-    embedding_id: str
-    document_id: str
-    metadata: Dict[str, Any]
-
-class Edge(BaseModel):
-    source: str
-    target: str
-    similarity: float
-    relationship_type: str
-
-class GraphResponse(BaseModel):
-    nodes: List[Node]
-    edges: List[Edge]
-    stats: Dict[str, Any]
-
-class QueryRequest(BaseModel):
-    query: str
-    top_k: int = 10
-    similarity_threshold: float = 0.7
-
-class QueryResponse(BaseModel):
-    query: str
-    nodes: List[Node]
-    edges: List[Edge]
-    execution_time_ms: float
-
-# --- API Endpoints ---
+# --- API Endpoints (using native dict responses, no Pydantic models) ---
 
 @app.get("/")
 async def root():
@@ -118,7 +79,7 @@ async def health_check():
         "timestamp": datetime.utcnow().isoformat()
     }
 
-@app.post("/api/documents/upload", response_model=DocumentUploadResponse)
+@app.post("/api/documents/upload")
 async def upload_document(
     background_tasks: BackgroundTasks,
     file: UploadFile = File(...)
@@ -172,7 +133,7 @@ async def upload_document(
         logger.error(f"Error processing document: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
-@app.get("/api/graph", response_model=GraphResponse)
+@app.get("/api/graph")
 async def get_knowledge_graph(
     similarity_threshold: float = 0.7,
     max_nodes: int = 100
@@ -189,18 +150,18 @@ async def get_knowledge_graph(
             max_nodes=max_nodes
         )
         
-        return GraphResponse(
-            nodes=graph["nodes"],
-            edges=graph["edges"],
-            stats=graph["stats"]
-        )
+        return {
+            "nodes": graph["nodes"],
+            "edges": graph["edges"],
+            "stats": graph["stats"]
+        }
         
     except Exception as e:
         logger.error(f"Error building graph: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
-@app.post("/api/query", response_model=QueryResponse)
-async def semantic_query(query: QueryRequest):
+@app.post("/api/query")
+async def semantic_query(body: Dict[str, Any] = Body(...)):
     """
     Perform semantic query on the knowledge graph
     Returns relevant nodes and their relationships
@@ -208,22 +169,26 @@ async def semantic_query(query: QueryRequest):
     try:
         start_time = datetime.utcnow()
         
-        logger.info(f"Processing query: {query.query}")
+        query_text = body.get("query", "")
+        top_k = body.get("top_k", 10)
+        similarity_threshold = body.get("similarity_threshold", 0.7)
+        
+        logger.info(f"Processing query: {query_text}")
         
         result = await query_engine.execute_query(
-            query=query.query,
-            top_k=query.top_k,
-            similarity_threshold=query.similarity_threshold
+            query=query_text,
+            top_k=top_k,
+            similarity_threshold=similarity_threshold
         )
         
         execution_time = (datetime.utcnow() - start_time).total_seconds() * 1000
         
-        return QueryResponse(
-            query=query.query,
-            nodes=result["nodes"],
-            edges=result["edges"],
-            execution_time_ms=execution_time
-        )
+        return {
+            "query": query_text,
+            "nodes": result["nodes"],
+            "edges": result["edges"],
+            "execution_time_ms": execution_time
+        }
         
     except Exception as e:
         logger.error(f"Error executing query: {str(e)}")
