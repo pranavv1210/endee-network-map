@@ -103,30 +103,118 @@ export default function LandingPage() {
           <section className="mb-20">
             <h3 className="text-3xl font-bold mb-8 text-center">System Architecture</h3>
             
-            <div className="bg-dark-800/30 backdrop-blur border border-dark-700 rounded-lg p-8 overflow-x-auto">
-              <pre className="text-xs lg:text-sm text-gray-400 font-mono leading-relaxed min-w-max">
-{`┌─────────────────────────────────────────────────────────────┐
-│                    CLIENT (Browser)                         │
-│  TypeScript • React • Next.js • React Flow Visualization   │
-└────────────────┬────────────────────────────────────────────┘
-                 │ REST API (HTTP)
-┌────────────────▼────────────────────────────────────────────┐
-│             BACKEND (FastAPI - Python 3.13)                │
-│  • Document Processing (PDF, DOCX, MD, TXT)               │
-│  • Text Chunking & Embedding Generation                    │
-│  • Semantic Relationship Discovery                         │
-│  • Knowledge Graph Construction                            │
-│  • Learning Path Generation                                │
-└────────────────┬────────────────────────────────────────────┘
-                 │ Vector Operations
-┌────────────────▼────────────────────────────────────────────┐
-│           VECTOR DATABASE (Endee - C++)                     │
-│  • High-performance HNSW indexing                          │
-│  • Sub-10ms semantic search                                │
-│  • Device-isolated indices                                 │
-│  • Cosine similarity scoring                               │
-└─────────────────────────────────────────────────────────────┘`}
-              </pre>
+            {/* Visual Architecture Diagram */}
+            <div className="bg-dark-800/30 backdrop-blur border border-dark-700 rounded-lg p-8 mb-8">
+              <svg className="w-full h-auto" viewBox="0 0 1200 500" xmlns="http://www.w3.org/2000/svg">
+                <defs>
+                  <marker id="arrowhead" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+                    <polygon points="0 0, 10 3, 0 6" fill="#06b6d4" />
+                  </marker>
+                  <linearGradient id="gradBlue" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stopColor="#3b82f6" stopOpacity="0.3" />
+                    <stop offset="100%" stopColor="#06b6d4" stopOpacity="0.3" />
+                  </linearGradient>
+                  <linearGradient id="gradOrange" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stopColor="#f97316" stopOpacity="0.3" />
+                    <stop offset="100%" stopColor="#ea580c" stopOpacity="0.3" />
+                  </linearGradient>
+                </defs>
+
+                {/* Browser/Client Box */}
+                <rect x="30" y="30" width="280" height="140" fill="url(#gradBlue)" stroke="#3b82f6" strokeWidth="2" rx="8" />
+                <text x="170" y="60" textAnchor="middle" className="text-base font-bold" fill="#06b6d4">BROWSER</text>
+                <text x="170" y="85" textAnchor="middle" className="text-xs" fill="#94a3b8">React • Next.js</text>
+                <text x="170" y="105" textAnchor="middle" className="text-xs" fill="#94a3b8">React Flow Visualization</text>
+                <text x="170" y="125" textAnchor="middle" className="text-xs" fill="#94a3b8">TypeScript • Tailwind CSS</text>
+                <text x="170" y="145" textAnchor="middle" className="text-xs" fill="#94a3b8">Device Isolation</text>
+
+                {/* Arrow 1: Browser to Backend */}
+                <line x1="310" y1="100" x2="390" y2="100" stroke="#06b6d4" strokeWidth="2" markerEnd="url(#arrowhead)" />
+                <text x="350" y="95" textAnchor="middle" className="text-xs" fill="#06b6d4">HTTP/REST API</text>
+
+                {/* FastAPI Backend Box */}
+                <rect x="390" y="30" width="280" height="140" fill="url(#gradBlue)" stroke="#3b82f6" strokeWidth="2" rx="8" />
+                <text x="530" y="60" textAnchor="middle" className="text-base font-bold" fill="#06b6d4">BACKEND</text>
+                <text x="530" y="85" textAnchor="middle" className="text-xs" fill="#94a3b8">FastAPI • Python 3.13</text>
+                <text x="530" y="105" textAnchor="middle" className="text-xs" fill="#94a3b8">Document Processing</text>
+                <text x="530" y="125" textAnchor="middle" className="text-xs" fill="#94a3b8">Embeddings & Graph Building</text>
+                <text x="530" y="145" textAnchor="middle" className="text-xs" fill="#94a3b8">Relationship Discovery</text>
+
+                {/* Arrow 2: Backend to Endee */}
+                <line x1="670" y1="100" x2="750" y2="100" stroke="#06b6d4" strokeWidth="2" markerEnd="url(#arrowhead)" />
+                <text x="710" y="95" textAnchor="middle" className="text-xs" fill="#06b6d4">Vector Ops</text>
+
+                {/* Endee Vector DB Box */}
+                <rect x="750" y="30" width="280" height="140" fill="url(#gradOrange)" stroke="#f97316" strokeWidth="2" rx="8" />
+                <text x="890" y="60" textAnchor="middle" className="text-base font-bold" fill="#f97316">ENDEE DB</text>
+                <text x="890" y="85" textAnchor="middle" className="text-xs" fill="#fed7aa">High-Performance C++</text>
+                <text x="890" y="105" textAnchor="middle" className="text-xs" fill="#fed7aa">HNSW Indexing</text>
+                <text x="890" y="125" textAnchor="middle" className="text-xs" fill="#fed7aa">Semantic Search &lt;10ms</text>
+                <text x="890" y="145" textAnchor="middle" className="text-xs" fill="#fed7aa">Device-Isolated Indices</text>
+
+                {/* Features section below */}
+                <text x="600" y="220" textAnchor="middle" className="text-sm font-bold" fill="#06b6d4">✨ FEATURES FLOW</text>
+
+                {/* Feature boxes */}
+                <g>
+                  {/* Upload */}
+                  <rect x="50" y="250" width="140" height="100" fill="url(#gradBlue)" stroke="#3b82f6" strokeWidth="1.5" rx="6" />
+                  <text x="120" y="275" textAnchor="middle" className="text-sm font-semibold" fill="#06b6d4">📤 UPLOAD</text>
+                  <text x="120" y="295" textAnchor="middle" className="text-xs" fill="#94a3b8">PDF, DOCX,</text>
+                  <text x="120" y="310" textAnchor="middle" className="text-xs" fill="#94a3b8">TXT, MD</text>
+                  <text x="120" y="330" textAnchor="middle" className="text-xs" fill="#94a3b8">Multi-doc support</text>
+                </g>
+
+                {/* Relationships */}
+                <g>
+                  <rect x="240" y="250" width="140" height="100" fill="url(#gradBlue)" stroke="#3b82f6" strokeWidth="1.5" rx="6" />
+                  <text x="310" y="275" textAnchor="middle" className="text-sm font-semibold" fill="#06b6d4">🔗 RELATIONSHIPS</text>
+                  <text x="310" y="295" textAnchor="middle" className="text-xs" fill="#94a3b8">Semantic edges</text>
+                  <text x="310" y="310" textAnchor="middle" className="text-xs" fill="#94a3b8">Similarity scores</text>
+                  <text x="310" y="330" textAnchor="middle" className="text-xs" fill="#94a3b8">0.5+ threshold</text>
+                </g>
+
+                {/* Smart Summaries */}
+                <g>
+                  <rect x="430" y="250" width="140" height="100" fill="url(#gradBlue)" stroke="#3b82f6" strokeWidth="1.5" rx="6" />
+                  <text x="500" y="275" textAnchor="middle" className="text-sm font-semibold" fill="#06b6d4">💡 SUMMARIES</text>
+                  <text x="500" y="295" textAnchor="middle" className="text-xs" fill="#94a3b8">Context-aware</text>
+                  <text x="500" y="310" textAnchor="middle" className="text-xs" fill="#94a3b8">Prerequisites</text>
+                  <text x="500" y="330" textAnchor="middle" className="text-xs" fill="#94a3b8">Rich metadata</text>
+                </g>
+
+                {/* Learning Paths */}
+                <g>
+                  <rect x="620" y="250" width="140" height="100" fill="url(#gradBlue)" stroke="#3b82f6" strokeWidth="1.5" rx="6" />
+                  <text x="690" y="275" textAnchor="middle" className="text-sm font-semibold" fill="#06b6d4">🎯 LEARNING PATHS</text>
+                  <text x="690" y="295" textAnchor="middle" className="text-xs" fill="#94a3b8">Auto-generated</text>
+                  <text x="690" y="310" textAnchor="middle" className="text-xs" fill="#94a3b8">Recommended order</text>
+                  <text x="690" y="330" textAnchor="middle" className="text-xs" fill="#94a3b8">Concept sequences</text>
+                </g>
+
+                {/* Multi-Document */}
+                <g>
+                  <rect x="810" y="250" width="140" height="100" fill="url(#gradBlue)" stroke="#3b82f6" strokeWidth="1.5" rx="6" />
+                  <text x="880" y="275" textAnchor="middle" className="text-sm font-semibold" fill="#06b6d4">📚 UNIFIED GRAPH</text>
+                  <text x="880" y="295" textAnchor="middle" className="text-xs" fill="#94a3b8">Cross-document</text>
+                  <text x="880" y="310" textAnchor="middle" className="text-xs" fill="#94a3b8">Common concepts</text>
+                  <text x="880" y="330" textAnchor="middle" className="text-xs" fill="#94a3b8">Knowledge gaps</text>
+                </g>
+
+                {/* Isolated Graphs */}
+                <g>
+                  <rect x="1000" y="250" width="140" height="100" fill="url(#gradOrange)" stroke="#f97316" strokeWidth="1.5" rx="6" />
+                  <text x="1070" y="275" textAnchor="middle" className="text-sm font-semibold" fill="#f97316">🔒 PRIVACY</text>
+                  <text x="1070" y="295" textAnchor="middle" className="text-xs" fill="#fed7aa">Device isolation</text>
+                  <text x="1070" y="310" textAnchor="middle" className="text-xs" fill="#fed7aa">No auth needed</text>
+                  <text x="1070" y="330" textAnchor="middle" className="text-xs" fill="#fed7aa">Session persistent</text>
+                </g>
+
+                {/* Output */}
+                <rect x="350" y="400" width="500" height="70" fill="url(#gradBlue)" stroke="#3b82f6" strokeWidth="2" rx="8" />
+                <text x="600" y="425" textAnchor="middle" className="text-base font-bold" fill="#06b6d4">OUTPUT: Interactive Knowledge Graph</text>
+                <text x="600" y="450" textAnchor="middle" className="text-xs" fill="#94a3b8">Nodes = Concepts | Edges = Relationships | Real-time Updates</text>
+              </svg>
             </div>
 
             <div className="mt-8 grid md:grid-cols-3 gap-6">
