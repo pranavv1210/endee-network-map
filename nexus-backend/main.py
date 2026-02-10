@@ -18,6 +18,7 @@ from services.embedding_service import EmbeddingService
 from services.endee_client import EndeeClient
 from services.graph_builder import GraphBuilder
 from services.query_engine import QueryEngine
+from services.device_graph_store import DeviceGraphStore
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -55,7 +56,10 @@ UPLOAD_DIR.mkdir(exist_ok=True)
 endee_client = EndeeClient(ENDEE_URL)
 embedding_service = EmbeddingService()
 document_processor = DocumentProcessor()
-graph_builder = GraphBuilder(endee_client, embedding_service)
+
+# Device-based graph isolation: each device gets its own private graph
+device_graph_manager = DeviceGraphStore(endee_client, embedding_service)
+
 query_engine = QueryEngine(endee_client, embedding_service)
 
 # --- API Endpoints (using native dict responses, no Pydantic models) ---
@@ -87,11 +91,16 @@ async def health_check():
 
 @app.post("/api/documents/upload")
 async def upload_document(
-    file: UploadFile = File(...)
+    file: UploadFile = File(...),
+    device_id: str = None
 ):
     """
     Upload a document and process it into knowledge chunks
     Supports: PDF, TXT, MD, DOCX
+    
+    Args:
+        file: Document file to upload
+        device_id: Unique device identifier (optional, will use default if not provided)
     """
     try:
         logger.info(f"Receiving document: {file.filename}")
@@ -111,6 +120,12 @@ async def upload_document(
         content = await file.read()
         file_path.write_bytes(content)
         
+        # Use device_id from query param (for device isolation)
+        if not device_id:
+            device_id = "default"
+        
+        logger.info(f"Processing document for device: {device_id}")
+        
         # Process document
         document_id = await document_processor.process_document(
             file_path=file_path,
@@ -119,6 +134,9 @@ async def upload_document(
         
         # Extract chunks and create embeddings
         chunks = await document_processor.extract_chunks(document_id)
+        
+        # Get device-specific graph builder
+        graph_builder = device_graph_manager.get_graph_builder(device_id)
         
         # Build graph inline so nodes are available immediately
         await graph_builder.add_document_to_graph(
@@ -139,15 +157,24 @@ async def upload_document(
 
 @app.get("/api/graph")
 async def get_knowledge_graph(
+    device_id: str = "default",
     similarity_threshold: float = 0.7,
     max_nodes: int = 100
 ):
     """
-    Retrieve the complete knowledge graph
+    Retrieve the complete knowledge graph for a specific device
     Nodes represent concepts, edges represent semantic relationships
+    
+    Args:
+        device_id: Unique device identifier
+        similarity_threshold: Minimum similarity score for edges
+        max_nodes: Maximum number of nodes to return
     """
     try:
-        logger.info("Building knowledge graph")
+        logger.info(f"Building knowledge graph for device: {device_id}")
+        
+        # Get device-specific graph builder
+        graph_builder = device_graph_manager.get_graph_builder(device_id)
         
         graph = await graph_builder.build_graph(
             similarity_threshold=similarity_threshold,
@@ -168,16 +195,20 @@ async def get_knowledge_graph(
 async def semantic_query(body: Dict[str, Any] = Body(...)):
     """
     Perform semantic query on the knowledge graph
-    Returns relevant nodes and their relationships
+    Returns relevant nodes and their relationships from user's private graph
     """
     try:
         start_time = datetime.utcnow()
         
+        device_id = body.get("device_id", "default")
         query_text = body.get("query", "")
         top_k = body.get("top_k", 10)
         similarity_threshold = body.get("similarity_threshold", 0.7)
         
-        logger.info(f"Processing query: {query_text}")
+        logger.info(f"Processing query for device {device_id}: {query_text}")
+        
+        # Get device-specific graph builder
+        graph_builder = device_graph_manager.get_graph_builder(device_id)
         
         result = await query_engine.execute_query(
             query=query_text,
@@ -215,12 +246,14 @@ async def semantic_query(body: Dict[str, Any] = Body(...)):
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/api/node/{node_id}")
-async def get_node_details(node_id: str):
+async def get_node_details(node_id: str, device_id: str = "default"):
     """
     Retrieve detailed information about a specific node
     Includes summary, sources, and related concepts
     """
     try:
+        # Get device-specific graph builder
+        graph_builder = device_graph_manager.get_graph_builder(device_id)
         details = await graph_builder.get_node_details(node_id)
         
         if not details:
@@ -234,13 +267,79 @@ async def get_node_details(node_id: str):
         logger.error(f"Error retrieving node details: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
-@app.get("/api/stats")
-async def get_system_stats():
+@app.get("/api/learning-paths")
+async def get_learning_paths(
+    device_id: str = "default",
+    similarity_threshold: float = 0.7,
+    max_nodes: int = 100
+):
     """
-    Retrieve system statistics
+    Retrieve recommended learning paths through the knowledge graph
+    Shows optimal sequence to learn concepts from user's private graph
+    """
+    try:
+        # Get device-specific graph builder
+        graph_builder = device_graph_manager.get_graph_builder(device_id)
+        
+        graph = await graph_builder.build_graph(
+            similarity_threshold=similarity_threshold,
+            max_nodes=max_nodes
+        )
+        
+        return {
+            "learning_paths": graph.get("learning_paths", []),
+            "total_concepts": graph["stats"]["total_nodes"],
+            "total_connections": graph["stats"]["total_edges"]
+        }
+        
+    except Exception as e:
+        logger.error(f"Error retrieving learning paths: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/recommendations")
+async def get_recommendations(device_id: str = "default", node_id: str = None):
+    """
+    Get personalized recommendations based on current learning
+    If node_id provided, recommends next concepts to learn from user's private graph
+    """
+    try:
+        # Get device-specific graph builder
+        graph_builder = device_graph_manager.get_graph_builder(device_id)
+        
+        if node_id and node_id in graph_builder.nodes:
+            node = graph_builder.nodes[node_id]
+            related = graph_builder._find_related_nodes(
+                node_id,
+                graph_builder.edges,
+                list(graph_builder.nodes.values())
+            )
+            
+            return {
+                "current": node.to_dict(),
+                "next_to_learn": related,
+                "prerequisites": graph_builder._infer_prerequisites(node.label)
+            }
+        else:
+            # Return general recommendations (learning paths)
+            graph = await graph_builder.build_graph()
+            return {
+                "recommendation_type": "learning_paths",
+                "paths": graph.get("learning_paths", [])
+            }
+        
+    except Exception as e:
+        logger.error(f"Error generating recommendations: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/stats")
+async def get_system_stats(device_id: str = "default"):
+    """
+    Retrieve system statistics for a device
     Documents, concepts, relationships, clusters
     """
     try:
+        # Get device-specific graph builder
+        graph_builder = device_graph_manager.get_graph_builder(device_id)
         stats = await graph_builder.get_statistics()
         return stats
         
@@ -249,11 +348,14 @@ async def get_system_stats():
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.delete("/api/documents/{document_id}")
-async def delete_document(document_id: str):
+async def delete_document(document_id: str, device_id: str = "default"):
     """
-    Delete a document and its associated knowledge chunks
+    Delete a document and its associated knowledge chunks from user's private graph
     """
     try:
+        # Get device-specific graph builder
+        graph_builder = device_graph_manager.get_graph_builder(device_id)
+        
         await document_processor.delete_document(document_id)
         await graph_builder.remove_document_from_graph(document_id)
         
