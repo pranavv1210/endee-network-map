@@ -667,7 +667,7 @@ Bengaluru, India
 # 📞 Links
 
 * **GitHub**: [endee-network-map](https://github.com/pranavv1210/endee-network-map.git)
-* **Deployed Link**: [https://nexus-knowledge-map.vercel.app/](https://nexus-knowledge-map.vercel.app/)
+* **Deployed Link**: [https://endee-network-map.vercel.app/](https://endee-network-map.vercel.app/)
 * **Documentation**: [docs/](nexus-docs/)
 
 ---
