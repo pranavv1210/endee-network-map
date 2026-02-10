@@ -190,7 +190,7 @@ class GraphBuilder:
         self,
         new_chunk_ids: List[str],
         new_embeddings: List[List[float]],
-        similarity_threshold: float = 0.7,
+        similarity_threshold: float = 0.5,
         top_k: int = 5
     ):
         """
@@ -198,20 +198,20 @@ class GraphBuilder:
         Uses in-memory embedding similarity computation
         """
         try:
-            # Get all existing node embeddings
-            existing_nodes = list(self.nodes.values())
+            # Get all existing node embeddings (only those added before this call)
+            nodes_before = {nid: node for nid, node in self.nodes.items() 
+                          if nid not in new_chunk_ids}
+            
+            logger.info(f"Discovering relationships: {len(new_chunk_ids)} new nodes vs {len(nodes_before)} existing nodes")
             
             # For each new node, compute similarity to all existing nodes
             for new_id, new_embedding in zip(new_chunk_ids, new_embeddings):
+                if new_id not in self.nodes:
+                    continue
+                    
                 similarities = []
                 
-                for existing_node in existing_nodes:
-                    existing_id = existing_node.node_id
-                    
-                    # Skip self-comparison
-                    if existing_id == new_id:
-                        continue
-                    
+                for existing_id, existing_node in nodes_before.items():
                     # Skip if existing node has no embedding
                     if existing_node.embedding is None:
                         continue
@@ -222,12 +222,18 @@ class GraphBuilder:
                         existing_node.embedding
                     )
                     
-                    similarities.append((existing_id, similarity))
+                    similarities.append((existing_id, existing_node.label, similarity))
                 
                 # Sort by similarity and create edges for top matches
-                similarities.sort(key=lambda x: x[1], reverse=True)
+                similarities.sort(key=lambda x: x[2], reverse=True)
                 
-                for existing_id, similarity in similarities[:top_k]:
+                # Log top matches
+                if similarities:
+                    logger.info(f"Node '{self.nodes[new_id].label}' top similarities: {[(label, f'{sim:.3f}') for _, label, sim in similarities[:3]]}")
+                
+                # Create edges for top matches above threshold
+                edges_created = 0
+                for existing_id, existing_label, similarity in similarities[:top_k]:
                     if similarity >= similarity_threshold:
                         edge = GraphEdge(
                             source=new_id,
@@ -236,8 +242,10 @@ class GraphBuilder:
                             relationship_type="semantic_similarity"
                         )
                         self.edges.append(edge)
-            
-            logger.info(f"Discovered {len(self.edges)} relationships")
+                        edges_created += 1
+                        logger.info(f"Created edge: '{self.nodes[new_id].label}' → '{existing_label}' (similarity: {similarity:.3f})")
+                
+            logger.info(f"Discovered {len(self.edges)} total relationships in graph")
             
         except Exception as e:
             logger.error(f"Error discovering relationships: {e}")
@@ -245,7 +253,7 @@ class GraphBuilder:
     
     async def build_graph(
         self,
-        similarity_threshold: float = 0.7,
+        similarity_threshold: float = 0.5,
         max_nodes: int = 100
     ) -> Dict[str, Any]:
         """
