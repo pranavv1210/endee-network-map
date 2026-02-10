@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { GraphNode } from '@/types'
-import { X, FileText, Link as LinkIcon, Loader2, BookOpen, Lightbulb, Network, ArrowRight } from 'lucide-react'
+import { X, FileText, Link as LinkIcon, Loader2, BookOpen, Lightbulb, Network } from 'lucide-react'
 import { apiClient } from '@/lib/api'
 
 interface NodePanelProps {
