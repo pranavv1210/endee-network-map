@@ -210,7 +210,7 @@ export default function NodePanel({ node, onClose }: NodePanelProps) {
                   </div>
                 )}
               </div>
-            </div></div>
+            </div>
           </>
         )}
       </div>
