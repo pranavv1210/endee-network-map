@@ -1,0 +1,12 @@
+services:
+  - type: web
+    name: nexus-backend
+    runtime: python
+    runtimeVersion: 3.13.4
+    buildCommand: "cd nexus-backend && pip install --no-cache-dir -r requirements.txt"
+    startCommand: "cd nexus-backend && uvicorn main:app --host 0.0.0.0 --port 8000"
+    envVars:
+      - key: ENDEE_URL
+        value: https://nexus-endee.onrender.com
+      - key: PYTHONUNBUFFERED
+        value: "1"
