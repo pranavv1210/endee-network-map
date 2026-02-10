@@ -506,22 +506,6 @@ After uploading test PDFs:
 | GET | `/health` | Health check | ❌ No |
 | POST | `/api/initialize` | Initialize system | ❌ No |
 
----
-
-## Legacy Endpoints
-
-| Method | Endpoint | Purpose | Device Isolated |
-|--------|----------|---------|--------|
-| GET | `/health` | Health check | No |
-| POST | `/api/initialize` | Initialize system | No |
-| GET | `/health` | Health check |
-| POST | `/api/initialize` | Initialize system |
-| POST | `/api/documents/upload` | Upload document |
-| GET | `/api/graph` | Get knowledge graph |
-| POST | `/api/query` | Semantic search |
-| GET | `/api/node/{node_id}` | Node details |
-| GET | `/api/stats` | System statistics |
-
 **Interactive docs:** http://localhost:8000/docs  
 **Note:** All endpoints except `/health` and `/initialize` require `device_id` parameter for isolation.
 
@@ -683,7 +667,8 @@ Bengaluru, India
 # 📞 Links
 
 * **GitHub**: [endee-network-map](https://github.com/pranavv1210/endee-network-map.git)
-* **Deployed Link**:
+* **Deployed Link**: [https://nexus-knowledge-map.vercel.app/](https://nexus-knowledge-map.vercel.app/)
+* **Documentation**: [docs/](nexus-docs/)
 
 ---
 
