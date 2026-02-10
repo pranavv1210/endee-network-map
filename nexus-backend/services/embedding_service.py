@@ -1,48 +1,43 @@
 """
 Embedding Service
-Generates vector embeddings for text using HuggingFace transformers
+Generates vector embeddings for text using TF-IDF + PCA
 """
 
-from transformers import AutoTokenizer, AutoModel
-import torch
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.decomposition import PCA
+import numpy as np
 import logging
 from typing import List, Union
-import numpy as np
 
 logger = logging.getLogger(__name__)
 
-def mean_pooling(model_output, attention_mask):
-    """Mean Pooling - Take attention mask into account for correct averaging"""
-    token_embeddings = model_output[0]
-    input_mask_expanded = attention_mask.unsqueeze(-1).expand(token_embeddings.size()).float()
-    return torch.sum(token_embeddings * input_mask_expanded, 1) / torch.clamp(input_mask_expanded.sum(1), min=1e-9)
-
 class EmbeddingService:
     """
-    Service for generating embeddings using HuggingFace transformers
-    Using sentence-transformers/all-MiniLM-L6-v2: Fast, efficient, 384-dimensional embeddings
+    Service for generating embeddings using TF-IDF + PCA
+    Fast, lightweight, no compilation needed
+    Dimension: 384 (compatible with Endee)
     """
     
-    def __init__(self, model_name: str = "sentence-transformers/all-MiniLM-L6-v2"):
+    def __init__(self, model_name: str = "tfidf-pca", dimension: int = 384):
         """
         Initialize embedding model
         
         Args:
-            model_name: Name of the HuggingFace model
-                       Default: sentence-transformers/all-MiniLM-L6-v2 (384 dims, fast, good quality)
+            model_name: Name of the model (not used, for API compatibility)
+            dimension: Embedding dimension output (default: 384)
         """
         self.model_name = model_name
-        logger.info(f"Loading embedding model: {model_name}")
-        
-        try:
-            self.tokenizer = AutoTokenizer.from_pretrained(model_name)
-            self.model = AutoModel.from_pretrained(model_name)
-            # Get embedding dimension from model config
-            self.dimension = self.model.config.hidden_size
-            logger.info(f"Embedding model loaded successfully. Dimension: {self.dimension}")
-        except Exception as e:
-            logger.error(f"Failed to load embedding model: {e}")
-            raise
+        self.dimension = dimension
+        self.vectorizer = TfidfVectorizer(
+            max_features=5000,
+            ngram_range=(1, 2),
+            min_df=1,
+            lowercase=True,
+            strip_accents='unicode'
+        )
+        self.pca = None
+        self.fitted = False
+        logger.info(f"Embedding model initialized: {model_name} (dim={dimension})")
     
     def encode(
         self,
@@ -55,8 +50,8 @@ class EmbeddingService:
         
         Args:
             texts: Single text string or list of texts
-            batch_size: Batch size for encoding
-            show_progress: Show progress bar for large batches
+            batch_size: Batch size (not used, for API compatibility)
+            show_progress: Show progress (not used, for API compatibility)
         
         Returns:
             Single embedding vector or list of vectors
@@ -67,27 +62,26 @@ class EmbeddingService:
             if is_single:
                 texts = [texts]
             
-            # Generate embeddings using transformers
-            embeddings = []
-            for i in range(0, len(texts), batch_size):
-                batch = texts[i:i+batch_size]
+            # Generate TF-IDF vectors
+            if not self.fitted:
+                # First time: fit on these texts
+                tfidf_matrix = self.vectorizer.fit_transform(texts)
+                self.fitted = True
                 
-                # Tokenize and encode
-                encoded_input = self.tokenizer(batch, padding=True, truncation=True, return_tensors='pt')
-                
-                with torch.no_grad():
-                    model_output = self.model(**encoded_input)
-                
-                # Mean pooling
-                sentence_embeddings = mean_pooling(model_output, encoded_input['attention_mask'])
-                
-                # Normalize embeddings
-                sentence_embeddings = torch.nn.functional.normalize(sentence_embeddings, p=2, dim=1)
-                
-                embeddings.extend(sentence_embeddings.cpu().numpy().tolist())
+                # Initialize PCA
+                self.pca = PCA(n_components=self.dimension, random_state=42)
+                embeddings = self.pca.fit_transform(tfidf_matrix.toarray())
+            else:
+                # Transform using existing vectorizer
+                tfidf_matrix = self.vectorizer.transform(texts)
+                embeddings = self.pca.transform(tfidf_matrix.toarray())
+            
+            # Normalize embeddings
+            norms = np.linalg.norm(embeddings, axis=1, keepdims=True)
+            embeddings = embeddings / (norms + 1e-9)
             
             # Convert to list format
-            embeddings_list = embeddings
+            embeddings_list = embeddings.tolist()
             
             # Return single vector if input was single text
             if is_single:
@@ -153,5 +147,6 @@ class EmbeddingService:
         return {
             "model_name": self.model_name,
             "dimension": self.dimension,
-            "max_seq_length": self.model.max_seq_length
+            "type": "TF-IDF with PCA",
+            "fitted": self.fitted
         }
