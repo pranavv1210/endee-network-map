@@ -104,8 +104,8 @@ export default function LandingPage() {
             <h3 className="text-3xl font-bold mb-8 text-center">System Architecture</h3>
             
             {/* Visual Architecture Diagram */}
-            <div className="bg-dark-800/30 backdrop-blur border border-dark-700 rounded-lg p-8 mb-8">
-              <svg className="w-full h-auto" viewBox="0 0 1200 500" xmlns="http://www.w3.org/2000/svg">
+            <div className="bg-dark-800/30 backdrop-blur border border-dark-700 rounded-lg p-8 mb-8 overflow-x-auto">
+              <svg className="w-full h-auto min-h-[600px]" viewBox="0 0 1400 650" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet">
                 <defs>
                   <marker id="arrowhead" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
                     <polygon points="0 0, 10 3, 0 6" fill="#06b6d4" />
@@ -120,100 +120,106 @@ export default function LandingPage() {
                   </linearGradient>
                 </defs>
 
+                {/* Top Layer: Browser, Backend, Endee */}
                 {/* Browser/Client Box */}
-                <rect x="30" y="30" width="280" height="140" fill="url(#gradBlue)" stroke="#3b82f6" strokeWidth="2" rx="8" />
-                <text x="170" y="60" textAnchor="middle" className="text-base font-bold" fill="#06b6d4">BROWSER</text>
-                <text x="170" y="85" textAnchor="middle" className="text-xs" fill="#94a3b8">React • Next.js</text>
-                <text x="170" y="105" textAnchor="middle" className="text-xs" fill="#94a3b8">React Flow Visualization</text>
-                <text x="170" y="125" textAnchor="middle" className="text-xs" fill="#94a3b8">TypeScript • Tailwind CSS</text>
-                <text x="170" y="145" textAnchor="middle" className="text-xs" fill="#94a3b8">Device Isolation</text>
+                <rect x="50" y="20" width="280" height="140" fill="url(#gradBlue)" stroke="#3b82f6" strokeWidth="2" rx="10" />
+                <text x="190" y="50" textAnchor="middle" fontSize="18" fontWeight="bold" fill="#06b6d4">BROWSER</text>
+                <text x="190" y="75" textAnchor="middle" fontSize="13" fill="#94a3b8">React • Next.js</text>
+                <text x="190" y="93" textAnchor="middle" fontSize="13" fill="#94a3b8">React Flow</text>
+                <text x="190" y="111" textAnchor="middle" fontSize="13" fill="#94a3b8">TypeScript • Tailwind</text>
+                <text x="190" y="129" textAnchor="middle" fontSize="13" fill="#94a3b8">Device Isolation</text>
 
                 {/* Arrow 1: Browser to Backend */}
-                <line x1="310" y1="100" x2="390" y2="100" stroke="#06b6d4" strokeWidth="2" markerEnd="url(#arrowhead)" />
-                <text x="350" y="95" textAnchor="middle" className="text-xs" fill="#06b6d4">HTTP/REST API</text>
+                <line x1="330" y1="90" x2="410" y2="90" stroke="#06b6d4" strokeWidth="2.5" markerEnd="url(#arrowhead)" />
+                <text x="370" y="80" textAnchor="middle" fontSize="12" fill="#06b6d4" fontWeight="500">HTTP/REST</text>
 
                 {/* FastAPI Backend Box */}
-                <rect x="390" y="30" width="280" height="140" fill="url(#gradBlue)" stroke="#3b82f6" strokeWidth="2" rx="8" />
-                <text x="530" y="60" textAnchor="middle" className="text-base font-bold" fill="#06b6d4">BACKEND</text>
-                <text x="530" y="85" textAnchor="middle" className="text-xs" fill="#94a3b8">FastAPI • Python 3.13</text>
-                <text x="530" y="105" textAnchor="middle" className="text-xs" fill="#94a3b8">Document Processing</text>
-                <text x="530" y="125" textAnchor="middle" className="text-xs" fill="#94a3b8">Embeddings & Graph Building</text>
-                <text x="530" y="145" textAnchor="middle" className="text-xs" fill="#94a3b8">Relationship Discovery</text>
+                <rect x="410" y="20" width="280" height="140" fill="url(#gradBlue)" stroke="#3b82f6" strokeWidth="2" rx="10" />
+                <text x="550" y="50" textAnchor="middle" fontSize="18" fontWeight="bold" fill="#06b6d4">BACKEND</text>
+                <text x="550" y="75" textAnchor="middle" fontSize="13" fill="#94a3b8">FastAPI • Python</text>
+                <text x="550" y="93" textAnchor="middle" fontSize="13" fill="#94a3b8">Document Processing</text>
+                <text x="550" y="111" textAnchor="middle" fontSize="13" fill="#94a3b8">Embeddings & Graph</text>
+                <text x="550" y="129" textAnchor="middle" fontSize="13" fill="#94a3b8">Relationship Discovery</text>
 
                 {/* Arrow 2: Backend to Endee */}
-                <line x1="670" y1="100" x2="750" y2="100" stroke="#06b6d4" strokeWidth="2" markerEnd="url(#arrowhead)" />
-                <text x="710" y="95" textAnchor="middle" className="text-xs" fill="#06b6d4">Vector Ops</text>
+                <line x1="690" y1="90" x2="770" y2="90" stroke="#06b6d4" strokeWidth="2.5" markerEnd="url(#arrowhead)" />
+                <text x="730" y="80" textAnchor="middle" fontSize="12" fill="#06b6d4" fontWeight="500">Vector Ops</text>
 
                 {/* Endee Vector DB Box */}
-                <rect x="750" y="30" width="280" height="140" fill="url(#gradOrange)" stroke="#f97316" strokeWidth="2" rx="8" />
-                <text x="890" y="60" textAnchor="middle" className="text-base font-bold" fill="#f97316">ENDEE DB</text>
-                <text x="890" y="85" textAnchor="middle" className="text-xs" fill="#fed7aa">High-Performance C++</text>
-                <text x="890" y="105" textAnchor="middle" className="text-xs" fill="#fed7aa">HNSW Indexing</text>
-                <text x="890" y="125" textAnchor="middle" className="text-xs" fill="#fed7aa">Semantic Search &lt;10ms</text>
-                <text x="890" y="145" textAnchor="middle" className="text-xs" fill="#fed7aa">Device-Isolated Indices</text>
+                <rect x="770" y="20" width="280" height="140" fill="url(#gradOrange)" stroke="#f97316" strokeWidth="2" rx="10" />
+                <text x="910" y="50" textAnchor="middle" fontSize="18" fontWeight="bold" fill="#f97316">ENDEE DB</text>
+                <text x="910" y="75" textAnchor="middle" fontSize="13" fill="#fed7aa">High-Performance C++</text>
+                <text x="910" y="93" textAnchor="middle" fontSize="13" fill="#fed7aa">HNSW Indexing</text>
+                <text x="910" y="111" textAnchor="middle" fontSize="13" fill="#fed7aa">Semantic <10ms</text>
+                <text x="910" y="129" textAnchor="middle" fontSize="13" fill="#fed7aa">Device-Isolated</text>
 
-                {/* Features section below */}
-                <text x="600" y="220" textAnchor="middle" className="text-sm font-bold" fill="#06b6d4">✨ FEATURES FLOW</text>
+                {/* Separator */}
+                <line x1="50" y1="200" x2="1350" y2="200" stroke="#334155" strokeWidth="1" strokeDasharray="5,5" opacity="0.5" />
 
-                {/* Feature boxes */}
-                <g>
-                  {/* Upload */}
-                  <rect x="50" y="250" width="140" height="100" fill="url(#gradBlue)" stroke="#3b82f6" strokeWidth="1.5" rx="6" />
-                  <text x="120" y="275" textAnchor="middle" className="text-sm font-semibold" fill="#06b6d4">📤 UPLOAD</text>
-                  <text x="120" y="295" textAnchor="middle" className="text-xs" fill="#94a3b8">PDF, DOCX,</text>
-                  <text x="120" y="310" textAnchor="middle" className="text-xs" fill="#94a3b8">TXT, MD</text>
-                  <text x="120" y="330" textAnchor="middle" className="text-xs" fill="#94a3b8">Multi-doc support</text>
-                </g>
+                {/* Features Title */}
+                <text x="700" y="235" textAnchor="middle" fontSize="16" fontWeight="600" fill="#06b6d4">✨ CORE FEATURES</text>
 
-                {/* Relationships */}
-                <g>
-                  <rect x="240" y="250" width="140" height="100" fill="url(#gradBlue)" stroke="#3b82f6" strokeWidth="1.5" rx="6" />
-                  <text x="310" y="275" textAnchor="middle" className="text-sm font-semibold" fill="#06b6d4">🔗 RELATIONSHIPS</text>
-                  <text x="310" y="295" textAnchor="middle" className="text-xs" fill="#94a3b8">Semantic edges</text>
-                  <text x="310" y="310" textAnchor="middle" className="text-xs" fill="#94a3b8">Similarity scores</text>
-                  <text x="310" y="330" textAnchor="middle" className="text-xs" fill="#94a3b8">0.5+ threshold</text>
-                </g>
+                {/* Feature Box 1: Upload */}
+                <rect x="50" y="260" width="160" height="130" fill="url(#gradBlue)" stroke="#3b82f6" strokeWidth="1.5" rx="8" />
+                <text x="130" y="290" textAnchor="middle" fontSize="14" fontWeight="600" fill="#06b6d4">📤 UPLOAD</text>
+                <line x1="70" y1="305" x2="190" y2="305" stroke="#3b82f6" strokeWidth="0.5" opacity="0.3" />
+                <text x="130" y="325" textAnchor="middle" fontSize="12" fill="#94a3b8">PDF, DOCX</text>
+                <text x="130" y="343" textAnchor="middle" fontSize="12" fill="#94a3b8">TXT, MD</text>
+                <text x="130" y="361" textAnchor="middle" fontSize="12" fill="#94a3b8">Multi-doc</text>
+                <text x="130" y="379" textAnchor="middle" fontSize="12" fill="#94a3b8">support</text>
 
-                {/* Smart Summaries */}
-                <g>
-                  <rect x="430" y="250" width="140" height="100" fill="url(#gradBlue)" stroke="#3b82f6" strokeWidth="1.5" rx="6" />
-                  <text x="500" y="275" textAnchor="middle" className="text-sm font-semibold" fill="#06b6d4">💡 SUMMARIES</text>
-                  <text x="500" y="295" textAnchor="middle" className="text-xs" fill="#94a3b8">Context-aware</text>
-                  <text x="500" y="310" textAnchor="middle" className="text-xs" fill="#94a3b8">Prerequisites</text>
-                  <text x="500" y="330" textAnchor="middle" className="text-xs" fill="#94a3b8">Rich metadata</text>
-                </g>
+                {/* Feature Box 2: Relationships */}
+                <rect x="260" y="260" width="160" height="130" fill="url(#gradBlue)" stroke="#3b82f6" strokeWidth="1.5" rx="8" />
+                <text x="340" y="290" textAnchor="middle" fontSize="14" fontWeight="600" fill="#06b6d4">🔗 RELATIONSHIPS</text>
+                <line x1="280" y1="305" x2="400" y2="305" stroke="#3b82f6" strokeWidth="0.5" opacity="0.3" />
+                <text x="340" y="325" textAnchor="middle" fontSize="12" fill="#94a3b8">Semantic</text>
+                <text x="340" y="343" textAnchor="middle" fontSize="12" fill="#94a3b8">edges</text>
+                <text x="340" y="361" textAnchor="middle" fontSize="12" fill="#94a3b8">Similarity</text>
+                <text x="340" y="379" textAnchor="middle" fontSize="12" fill="#94a3b8">scores</text>
 
-                {/* Learning Paths */}
-                <g>
-                  <rect x="620" y="250" width="140" height="100" fill="url(#gradBlue)" stroke="#3b82f6" strokeWidth="1.5" rx="6" />
-                  <text x="690" y="275" textAnchor="middle" className="text-sm font-semibold" fill="#06b6d4">🎯 LEARNING PATHS</text>
-                  <text x="690" y="295" textAnchor="middle" className="text-xs" fill="#94a3b8">Auto-generated</text>
-                  <text x="690" y="310" textAnchor="middle" className="text-xs" fill="#94a3b8">Recommended order</text>
-                  <text x="690" y="330" textAnchor="middle" className="text-xs" fill="#94a3b8">Concept sequences</text>
-                </g>
+                {/* Feature Box 3: Summaries */}
+                <rect x="470" y="260" width="160" height="130" fill="url(#gradBlue)" stroke="#3b82f6" strokeWidth="1.5" rx="8" />
+                <text x="550" y="290" textAnchor="middle" fontSize="14" fontWeight="600" fill="#06b6d4">💡 SUMMARIES</text>
+                <line x1="490" y1="305" x2="610" y2="305" stroke="#3b82f6" strokeWidth="0.5" opacity="0.3" />
+                <text x="550" y="325" textAnchor="middle" fontSize="12" fill="#94a3b8">Context-</text>
+                <text x="550" y="343" textAnchor="middle" fontSize="12" fill="#94a3b8">aware</text>
+                <text x="550" y="361" textAnchor="middle" fontSize="12" fill="#94a3b8">Prerequisites</text>
+                <text x="550" y="379" textAnchor="middle" fontSize="12" fill="#94a3b8">Rich metadata</text>
 
-                {/* Multi-Document */}
-                <g>
-                  <rect x="810" y="250" width="140" height="100" fill="url(#gradBlue)" stroke="#3b82f6" strokeWidth="1.5" rx="6" />
-                  <text x="880" y="275" textAnchor="middle" className="text-sm font-semibold" fill="#06b6d4">📚 UNIFIED GRAPH</text>
-                  <text x="880" y="295" textAnchor="middle" className="text-xs" fill="#94a3b8">Cross-document</text>
-                  <text x="880" y="310" textAnchor="middle" className="text-xs" fill="#94a3b8">Common concepts</text>
-                  <text x="880" y="330" textAnchor="middle" className="text-xs" fill="#94a3b8">Knowledge gaps</text>
-                </g>
+                {/* Feature Box 4: Learning Paths */}
+                <rect x="680" y="260" width="160" height="130" fill="url(#gradBlue)" stroke="#3b82f6" strokeWidth="1.5" rx="8" />
+                <text x="760" y="290" textAnchor="middle" fontSize="14" fontWeight="600" fill="#06b6d4">🎯 LEARNING PATHS</text>
+                <line x1="700" y1="305" x2="820" y2="305" stroke="#3b82f6" strokeWidth="0.5" opacity="0.3" />
+                <text x="760" y="325" textAnchor="middle" fontSize="12" fill="#94a3b8">Auto-</text>
+                <text x="760" y="343" textAnchor="middle" fontSize="12" fill="#94a3b8">generated</text>
+                <text x="760" y="361" textAnchor="middle" fontSize="12" fill="#94a3b8">Concept</text>
+                <text x="760" y="379" textAnchor="middle" fontSize="12" fill="#94a3b8">sequences</text>
 
-                {/* Isolated Graphs */}
-                <g>
-                  <rect x="1000" y="250" width="140" height="100" fill="url(#gradOrange)" stroke="#f97316" strokeWidth="1.5" rx="6" />
-                  <text x="1070" y="275" textAnchor="middle" className="text-sm font-semibold" fill="#f97316">🔒 PRIVACY</text>
-                  <text x="1070" y="295" textAnchor="middle" className="text-xs" fill="#fed7aa">Device isolation</text>
-                  <text x="1070" y="310" textAnchor="middle" className="text-xs" fill="#fed7aa">No auth needed</text>
-                  <text x="1070" y="330" textAnchor="middle" className="text-xs" fill="#fed7aa">Session persistent</text>
-                </g>
+                {/* Feature Box 5: Unified Graph */}
+                <rect x="890" y="260" width="160" height="130" fill="url(#gradBlue)" stroke="#3b82f6" strokeWidth="1.5" rx="8" />
+                <text x="970" y="290" textAnchor="middle" fontSize="14" fontWeight="600" fill="#06b6d4">📚 UNIFIED GRAPH</text>
+                <line x1="910" y1="305" x2="1030" y2="305" stroke="#3b82f6" strokeWidth="0.5" opacity="0.3" />
+                <text x="970" y="325" textAnchor="middle" fontSize="12" fill="#94a3b8">Cross-doc</text>
+                <text x="970" y="343" textAnchor="middle" fontSize="12" fill="#94a3b8">concepts</text>
+                <text x="970" y="361" textAnchor="middle" fontSize="12" fill="#94a3b8">Knowledge</text>
+                <text x="970" y="379" textAnchor="middle" fontSize="12" fill="#94a3b8">gaps</text>
 
-                {/* Output */}
-                <rect x="350" y="400" width="500" height="70" fill="url(#gradBlue)" stroke="#3b82f6" strokeWidth="2" rx="8" />
-                <text x="600" y="425" textAnchor="middle" className="text-base font-bold" fill="#06b6d4">OUTPUT: Interactive Knowledge Graph</text>
-                <text x="600" y="450" textAnchor="middle" className="text-xs" fill="#94a3b8">Nodes = Concepts | Edges = Relationships | Real-time Updates</text>
+                {/* Feature Box 6: Privacy */}
+                <rect x="1100" y="260" width="160" height="130" fill="url(#gradOrange)" stroke="#f97316" strokeWidth="1.5" rx="8" />
+                <text x="1180" y="290" textAnchor="middle" fontSize="14" fontWeight="600" fill="#f97316">🔒 PRIVACY</text>
+                <line x1="1120" y1="305" x2="1240" y2="305" stroke="#f97316" strokeWidth="0.5" opacity="0.3" />
+                <text x="1180" y="325" textAnchor="middle" fontSize="12" fill="#fed7aa">Device</text>
+                <text x="1180" y="343" textAnchor="middle" fontSize="12" fill="#fed7aa">isolation</text>
+                <text x="1180" y="361" textAnchor="middle" fontSize="12" fill="#fed7aa">No auth</text>
+                <text x="1180" y="379" textAnchor="middle" fontSize="12" fill="#fed7aa">needed</text>
+
+                {/* Another Separator */}
+                <line x1="50" y1="420" x2="1350" y2="420" stroke="#334155" strokeWidth="1" strokeDasharray="5,5" opacity="0.5" />
+
+                {/* Output Box */}
+                <rect x="250" y="450" width="900" height="100" fill="url(#gradBlue)" stroke="#3b82f6" strokeWidth="2" rx="10" />
+                <text x="700" y="490" textAnchor="middle" fontSize="16" fontWeight="bold" fill="#06b6d4">OUTPUT: Interactive Knowledge Graph</text>
+                <text x="700" y="518" textAnchor="middle" fontSize="13" fill="#94a3b8">Nodes = Concepts  |  Edges = Relationships  |  Real-time Updates</text>
               </svg>
             </div>
 
