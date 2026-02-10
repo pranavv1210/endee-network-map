@@ -58,7 +58,29 @@ Search engines retrieve fragments — they do not reveal structure.
 
 ---
 
-# 💡 Solution
+# � Project Metrics
+
+| Metric | Value |
+|--------|-------|
+| **Active Services** | 3/3 (Backend, Frontend, Endee) |
+| **Deployment Status** | ✅ Production Ready |
+| **Backend Framework** | FastAPI (Python 3.13) |
+| **Frontend Framework** | Next.js 14 + React 18 |
+| **Vector Database** | Endee (HNSW) |
+| **Embedding Model** | all-MiniLM-L6-v2 (384-dim) |
+| **Supported Formats** | PDF, TXT, MD, DOCX |
+| **Query Latency** | <200ms (in-memory) |
+| **Graph Scalability** | 100+ concepts/graph |
+| **Device Isolation** | ✅ Per-device private graphs |
+| **Data Persistence** | In-memory (survives session) |
+| **Learning Paths** | Auto-generated from graph |
+| **Relationship Discovery** | Cosine similarity (threshold: 0.5) |
+| **Code Quality** | Type-safe (TypeScript/Python) |
+| **Open Source** | MIT License |
+
+---
+
+# �💡 Solution
 
 Nexus creates a **vector-native intelligence layer** over documents.
 
@@ -413,12 +435,85 @@ Open http://localhost:3000
 
 ---
 
-# 📊 API Endpoints
+# � Test Documents
+
+We provide **7 sample AI/ML PDFs** to quickly test the system without uploading your own documents.
+
+## Available Test PDFs
+
+Located in `test-pdfs/` directory:
+
+| # | Document | Topics | Chunks |
+|---|----------|--------|--------|
+| 01 | **Machine Learning Basics** | Supervised learning, classification, regression | ~3-5 |
+| 02 | **Neural Networks** | Activation functions, backpropagation, layers | ~3-5 |
+| 03 | **Transformers & NLP** | Attention mechanism, BERT, GPT | ~3-5 |
+| 04 | **Computer Vision** | CNNs, image classification, object detection | ~3-5 |
+| 05 | **Reinforcement Learning** | MDP, policy gradient, Q-learning | ~3-5 |
+| 06 | **Data Science Pipeline** | EDA, preprocessing, feature engineering | ~3-5 |
+| 07 | **AI Ethics** | Bias, fairness, explainability, governance | ~3-5 |
+
+## How to Use Test PDFs
+
+### Option 1: Manual Upload via UI
+```bash
+1. Open http://localhost:3000
+2. Click "Click to upload" in the ControlPanel
+3. Select any PDF from test-pdfs/
+4. Watch the graph form automatically
+```
+
+### Option 2: Upload Multiple for Relationship Testing
+```bash
+1. Upload 02-neural-networks.pdf
+   → Creates nodes about neural networks
+
+2. Upload 01-machine-learning-basics.pdf
+   → Creates nodes about ML basics
+   → Automatically discovers relationships
+   → Graph shows edges between concepts ✨
+```
+
+### Expected Results
+
+After uploading test PDFs:
+
+- **Single Upload**: 3-5 isolated nodes (concepts from one PDF)
+- **Multiple Uploads**: Nodes + edges showing semantic relationships
+- **Example Relationships**:
+  - "Neural Networks" → "Machine Learning" (similarity: 0.72)
+  - "Transformers" → "Attention Mechanisms" (similarity: 0.85)
+  - "Deep Learning" → "Neural Networks" (similarity: 0.78)
+
+**Tip:** Upload complementary topics (ML Basics + Neural Networks) to see strong connections!
+
+---
+
+# �📊 API Endpoints
 
 **Base URL:** `http://localhost:8000`
 
-| Method | Endpoint | Purpose |
-|--------|----------|---------|
+| Method | Endpoint | Purpose | Device Isolated |
+|--------|----------|---------|--------|
+| POST | `/api/documents/upload` | Upload document | ✅ Yes |
+| GET | `/api/graph` | Get knowledge graph | ✅ Yes |
+| POST | `/api/query` | Semantic search | ✅ Yes |
+| GET | `/api/node/{node_id}` | Node details | ✅ Yes |
+| GET | `/api/learning-paths` | Recommended concepts | ✅ Yes |
+| GET | `/api/recommendations` | Personalized next-steps | ✅ Yes |
+| DEL | `/api/documents/{doc_id}` | Delete document | ✅ Yes |
+| GET | `/api/stats` | System statistics | ✅ Yes |
+| GET | `/health` | Health check | ❌ No |
+| POST | `/api/initialize` | Initialize system | ❌ No |
+
+---
+
+## Legacy Endpoints
+
+| Method | Endpoint | Purpose | Device Isolated |
+|--------|----------|---------|--------|
+| GET | `/health` | Health check | No |
+| POST | `/api/initialize` | Initialize system | No |
 | GET | `/health` | Health check |
 | POST | `/api/initialize` | Initialize system |
 | POST | `/api/documents/upload` | Upload document |
@@ -427,7 +522,8 @@ Open http://localhost:3000
 | GET | `/api/node/{node_id}` | Node details |
 | GET | `/api/stats` | System statistics |
 
-**Interactive docs:** http://localhost:8000/docs
+**Interactive docs:** http://localhost:8000/docs  
+**Note:** All endpoints except `/health` and `/initialize` require `device_id` parameter for isolation.
 
 ---
 
