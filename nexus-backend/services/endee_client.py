@@ -120,7 +120,10 @@ class EndeeClient:
                 )
                 
                 response.raise_for_status()
-                result = response.json()
+                if response.content:
+                    result = response.json()
+                else:
+                    result = {"status": "ok", "inserted": len(vectors)}
                 logger.info(f"Inserted {len(vectors)} vectors into '{index_name}'")
                 return result
                 
