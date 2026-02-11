@@ -331,7 +331,7 @@ async def semantic_query(body: Dict[str, Any] = Body(...)):
                 "result_count": len(fallback_nodes)
             }
         
-        execution_time = (datetime.utcnow() - start_time).total_seconds() * 1000
+        execution_time = (time.time() - start_time) * 1000
         
         return {
             "query": query_text,

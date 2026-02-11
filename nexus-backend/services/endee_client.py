@@ -7,6 +7,7 @@ import httpx
 import logging
 from typing import List, Dict, Any, Optional
 import asyncio
+import time
 
 logger = logging.getLogger(__name__)
 
@@ -22,6 +23,30 @@ class EndeeClient:
             self.headers["Authorization"] = auth_token
         
         self.timeout = httpx.Timeout(30.0, connect=10.0)
+        self.max_retries = 5
+        self.base_delay = 1.0  # Base delay for exponential backoff
+    
+    async def _retry_with_backoff(self, func, *args, **kwargs):
+        """Retry a function with exponential backoff for rate limiting"""
+        for attempt in range(self.max_retries):
+            try:
+                return await func(*args, **kwargs)
+            except httpx.HTTPStatusError as e:
+                if e.response.status_code == 429:  # Too Many Requests
+                    if attempt < self.max_retries - 1:
+                        delay = self.base_delay * (2 ** attempt)  # Exponential backoff
+                        logger.warning(f"Rate limited (429), retrying in {delay}s (attempt {attempt + 1}/{self.max_retries})")
+                        await asyncio.sleep(delay)
+                        continue
+                raise
+            except Exception as e:
+                if attempt < self.max_retries - 1 and "timeout" in str(e).lower():
+                    delay = self.base_delay * (2 ** attempt)
+                    logger.warning(f"Timeout error, retrying in {delay}s (attempt {attempt + 1}/{self.max_retries})")
+                    await asyncio.sleep(delay)
+                    continue
+                raise
+        raise Exception(f"Max retries ({self.max_retries}) exceeded")
     
     async def health_check(self) -> bool:
         """Check if Endee is accessible"""
@@ -52,7 +77,7 @@ class EndeeClient:
             metric: Distance metric (cosine, euclidean, dot)
             quant: Quantization level (float32, int8, binary)
         """
-        try:
+        async def _create():
             async with httpx.AsyncClient(timeout=self.timeout) as client:
                 payload = {
                     "index_name": index_name,
@@ -75,7 +100,9 @@ class EndeeClient:
                     return {"status": "exists", "name": index_name}
                 else:
                     response.raise_for_status()
-                    
+        
+        try:
+            return await self._retry_with_backoff(_create)
         except httpx.HTTPStatusError as e:
             logger.error(f"Failed to create index: {e.response.text}")
             raise
@@ -99,7 +126,7 @@ class EndeeClient:
             ids: Optional custom IDs for vectors
             metadata: Optional metadata for each vector
         """
-        try:
+        async def _insert():
             async with httpx.AsyncClient(timeout=self.timeout) as client:
                 # Build array of vector objects
                 vector_objects = []
@@ -126,7 +153,9 @@ class EndeeClient:
                     result = {"status": "ok", "inserted": len(vectors)}
                 logger.info(f"Inserted {len(vectors)} vectors into '{index_name}'")
                 return result
-                
+        
+        try:
+            return await self._retry_with_backoff(_insert)
         except Exception as e:
             logger.error(f"Error inserting vectors: {e}")
             raise
@@ -147,7 +176,7 @@ class EndeeClient:
             top_k: Number of results to return
             filter_metadata: Optional metadata filters
         """
-        try:
+        async def _search():
             async with httpx.AsyncClient(timeout=self.timeout) as client:
                 payload = {
                     "vector": query_vector,
@@ -173,7 +202,9 @@ class EndeeClient:
                 if isinstance(data, list):
                     return data
                 return []
-                
+        
+        try:
+            return await self._retry_with_backoff(_search)
         except Exception as e:
             logger.error(f"Error searching vectors: {e}")
             raise
