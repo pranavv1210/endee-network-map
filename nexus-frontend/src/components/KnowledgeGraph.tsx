@@ -14,7 +14,7 @@ import ReactFlow, {
   useReactFlow,
 } from 'reactflow'
 import { GraphNode, GraphEdge } from '@/types'
-import { Loader2, Brain, ZoomIn, Info } from 'lucide-react'
+import { Loader2, Brain, Info } from 'lucide-react'
 
 interface KnowledgeGraphProps {
   nodes: GraphNode[]
