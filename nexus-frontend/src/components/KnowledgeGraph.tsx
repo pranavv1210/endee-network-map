@@ -11,7 +11,6 @@ import ReactFlow, {
   useEdgesState,
   ConnectionMode,
   Panel,
-  useReactFlow,
 } from 'reactflow'
 import { GraphNode, GraphEdge } from '@/types'
 import { Loader2, Brain, Info } from 'lucide-react'
@@ -33,7 +32,6 @@ export default function KnowledgeGraph({
   const [edges, setEdges, onEdgesChange] = useEdgesState([])
   const [hoveredNode, setHoveredNode] = useState<string | null>(null)
   const [showLegend, setShowLegend] = useState(true)
-  const { fitView } = useReactFlow()
 
   // Transform graph data to React Flow format with better styling
   const transformToReactFlowNodes = useCallback((graphNodes: GraphNode[]): Node[] => {
