@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useState, useRef } from 'react'
 import ReactFlow, {
   Node,
   Edge,
@@ -11,9 +11,10 @@ import ReactFlow, {
   useEdgesState,
   ConnectionMode,
   Panel,
+  NodeDragHandler,
 } from 'reactflow'
 import { GraphNode, GraphEdge } from '@/types'
-import { Loader2, Brain, Info } from 'lucide-react'
+import { Loader2, Brain, Info, RotateCcw } from 'lucide-react'
 
 interface KnowledgeGraphProps {
   nodes: GraphNode[]
@@ -32,20 +33,25 @@ export default function KnowledgeGraph({
   const [edges, setEdges, onEdgesChange] = useEdgesState([])
   const [hoveredNode, setHoveredNode] = useState<string | null>(null)
   const [showLegend, setShowLegend] = useState(true)
+  const [userPositions, setUserPositions] = useState<Record<string, { x: number; y: number }>>({})
+  const hasUserDragged = useRef(false)
 
   // Transform graph data to React Flow format with better styling
   const transformToReactFlowNodes = useCallback((graphNodes: GraphNode[]): Node[] => {
-    return graphNodes.map((node, index) => ({
-      id: node.id,
-      type: 'default',
-      position: {
-        // Simple force-directed layout approximation
+    return graphNodes.map((node, index) => {
+      // Use user-defined position if available, otherwise use auto-layout
+      const position = userPositions[node.id] || {
         x: Math.cos(index / graphNodes.length * Math.PI * 2) * 300 + 400,
         y: Math.sin(index / graphNodes.length * Math.PI * 2) * 300 + 300,
-      },
-      data: {
-        ...node,
-      },
+      }
+      
+      return {
+        id: node.id,
+        type: 'default',
+        position,
+        data: {
+          ...node,
+        },
       style: {
         background: hoveredNode === node.id 
           ? 'linear-gradient(135deg, #06b6d4 0%, #0891b2 100%)'
@@ -63,8 +69,9 @@ export default function KnowledgeGraph({
           : '0 10px 15px -3px rgba(0, 0, 0, 0.3)',
       },
       className: 'cursor-pointer',
-    }))
-  }, [hoveredNode])
+    }
+    })
+  }, [hoveredNode, userPositions])
 
   const transformToReactFlowEdges = useCallback((graphEdges: GraphEdge[]): Edge[] => {
     return graphEdges.map((edge) => {
@@ -130,6 +137,24 @@ export default function KnowledgeGraph({
     setHoveredNode(null)
   }, [])
 
+  // Handle node drag - save user-defined positions
+  const handleNodeDragStop: NodeDragHandler = useCallback(
+    (_event, node) => {
+      hasUserDragged.current = true
+      setUserPositions((prev) => ({
+        ...prev,
+        [node.id]: node.position,
+      }))
+    },
+    []
+  )
+
+  // Reset to auto-layout
+  const handleResetLayout = useCallback(() => {
+    setUserPositions({})
+    hasUserDragged.current = false
+  }, [])
+
   if (isLoading) {
     return (
       <div className="w-full h-full flex items-center justify-center bg-dark-900">
@@ -169,8 +194,11 @@ export default function KnowledgeGraph({
         onNodeClick={handleNodeClick}
         onNodeMouseEnter={handleNodeMouseEnter}
         onNodeMouseLeave={handleNodeMouseLeave}
+        onNodeDragStop={handleNodeDragStop}
         connectionMode={ConnectionMode.Loose}
+        nodesDraggable={true}
         fitView
+        fitViewOptions={{ padding: 0.2 }}
         attributionPosition="bottom-left"
       >
         <Background color="#334155" gap={16} />
@@ -208,7 +236,16 @@ export default function KnowledgeGraph({
               <span>Connections:</span>
               <span className="font-bold text-blue-400">{graphEdges.length}</span>
             </div>
-            <div className="pt-2 border-t border-dark-700">
+            <div className="pt-2 border-t border-dark-700 space-y-2">
+              {hasUserDragged.current && (
+                <button
+                  onClick={handleResetLayout}
+                  className="flex items-center gap-1 text-xs text-dark-400 hover:text-cyan-400 transition-colors w-full"
+                >
+                  <RotateCcw className="w-3 h-3" />
+                  <span>Reset Layout</span>
+                </button>
+              )}
               <button
                 onClick={() => setShowLegend(!showLegend)}
                 className="text-dark-400 hover:text-cyan-400 transition-colors"
